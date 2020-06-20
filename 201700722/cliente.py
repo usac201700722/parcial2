@@ -7,6 +7,55 @@ from brokerdata import * #Informacion de la conexion
 '''
 Ejemplo de cliente MQTT: gateway de red de sensores
 '''
+USER_FILENAME ='usuario'
+SALAS_FILENAME = 'salas'
+
+class configuracionCLiente(object):
+    def __init__(self,MQTT_HOST, MQTT_PORT, MQTT_USER, MQTT_PASS):
+        self.MQTT_HOST = MQTT_HOST
+        self.MQTT_PORT = MQTT_PORT
+        self.MQTT_USER = MQTT_USER
+        self.MQTT_PASS = MQTT_PASS
+    def subComandos(self,filename='usuario',qos=2):
+        datos = []
+        archivo = open(filename,'r') #Abrir el archivo en modo de LECTURA
+        for line in archivo: #Leer cada linea del archivo
+            registro = line
+            datos.append(registro) 
+        archivo.close() #Cerrar el archivo al finalizar
+        for i in datos:
+            client.subscribe(("comandos/"+str(i), qos))
+            logging.debug("comandos/"+str(i))
+    
+    def subUsuarios(self,filename='usuario',qos=2):
+        datos = []
+        archivo = open(filename,'r') #Abrir el archivo en modo de LECTURA
+        for line in archivo: #Leer cada linea del archivo
+            registro = line
+            datos.append(registro) 
+        archivo.close() #Cerrar el archivo al finalizar
+        for i in datos:
+            client.subscribe(("usuarios/"+str(i), qos))
+            logging.debug("usuarios/"+str(i))
+
+    def subSalas(self, filename='salas', qos=2):
+        datos = []
+        archivo = open(filename,'r') #Abrir el archivo en modo de LECTURA
+        for line in archivo: #Leer cada linea del archivo
+            registro = line.split('S')
+            registro[-1] = registro[-1].replace('\n', '')
+            datos.append(registro) 
+        archivo.close() #Cerrar el archivo al finalizar
+        for i in datos:
+            client.subscribe(("salas/"+str(i[0])+"/S"+str(i[1]), qos))
+            logging.debug("salas/"+str(i[0])+"/S"+str(i[1]))
+
+    def __str__(self):
+        datosMQTT="HOST: "+str(self.MQTT_HOST)+"PUERTO: "+ str(self.MQTT_PORT)
+        return datosMQTT
+
+    def __repr__(self):
+        return self.__str__
 
 #Configuracion inicial de logging
 logging.basicConfig(
