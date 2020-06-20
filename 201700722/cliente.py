@@ -101,12 +101,12 @@ def on_message(client, userdata, msg):	#msg contiene el topic y la info que lleg
     logging.info("Ha llegado el mensaje al topic: " + str(msg.topic)) #de donde vino el mss
     logging.info("El contenido del mensaje es: " + str(msg.payload))#que vino en el mss
 
-def conexionTCP(SERVER_IP,SERVER_PORT, BUFFER_SIZE):
+def conexionTCP(server_ip,server_port, buffer_size):
     # Se crea socket TCP
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Se conecta al puerto donde el servidor se encuentra a la escucha
-    server_address = (SERVER_IP, SERVER_PORT)
+    server_address = (server_ip, server_port)
     print('Conectando a {} en el puerto {}'.format(*server_address))
     sock.connect(server_address)
 
@@ -119,6 +119,7 @@ def conexionTCP(SERVER_IP,SERVER_PORT, BUFFER_SIZE):
     finally:
         print('\n\nConexion finalizada con el servidor')
         sock.close()
+
 
 logging.info("Cliente MQTT con paho-mqtt") #Mensaje en consola
 
@@ -180,10 +181,7 @@ try:
             grabar = hilos(duracion)
             grabar.hiloGrabar.start()
         elif comando == "2b":
-            topic_send = input("Ingrese la sala ala que desea enviar el audio: ")
-            duracion = int(input("Ingrese la duracion del audio en segundos: "))
-            grabar = hilos(duracion)
-            grabar.hiloGrabar.start()
+            conexionTCP(SERVER_IP,SERVER_PORT,BUFFER_SIZE)
         else:
             logging.error("El comando ingresado es incorrecto, recuerde ver las instrucciones")
                
