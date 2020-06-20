@@ -2,7 +2,7 @@ import paho.mqtt.client as mqtt
 import logging
 import time
 import os 
-from brokerData import * 
+from brokerdata import * 
 
 
 LOG_FILENAME = 'mqtt.log'
@@ -16,15 +16,10 @@ class configuracionesServidor(object):
         self.MQTT_USER = MQTT_USER
         self.MQTT_PASS = MQTT_PASS
 
-    def configuracionLoggin(self):
-        #Configuracion inicial de logging
-        logging.basicConfig(
-        level = logging.INFO, 
-        format = '[%(levelname)s] (%(threadName)-10s) %(message)s'
-        )
+
     def subSalas(self, filename='salas', qos=2):
         datos = []
-        archivo = open(fileName,'r') #Abrir el archivo en modo de LECTURA
+        archivo = open(filename,'r') #Abrir el archivo en modo de LECTURA
         for line in archivo: #Leer cada linea del archivo
             registro = line.split('S')
             registro[-1] = registro[-1].replace('\n', '')
@@ -32,13 +27,39 @@ class configuracionesServidor(object):
         archivo.close() #Cerrar el archivo al finalizar
         for i in datos:
             client.subscribe(("salas/"+str(i[0])+"/S"+str(i[1]), qos))
-            #print("salas/"+str(i[0])+"/S"+str(i[1]))
+            logging.debug("salas/"+str(i[0])+"/S"+str(i[1]))
+    
+    def subUsuarios(self, filename='usuarios', qos=2):
+        datos = []
+        archivo = open(filename,'r') #Abrir el archivo en modo de LECTURA
+        for line in archivo: #Leer cada linea del archivo
+            registro = line.split(',')
+            registro[-1] = registro[-1].replace('\n', '')
+            datos.append(registro) 
+        archivo.close() #Cerrar el archivo al finalizar
+        
+        for i in datos:
+            client.subscribe(("usuarios/"+str(i[0]), qos))
+            logging.debug("usuarios/"+str(i[0]))
+    
+    def subComandos(self, qos=2):
+        client.subscribe("comandos/08/#",qos)
 
+    def __str__(self):
+        datosMQTT="HOST: "+str(self.MQTT_HOST)+"PUERTO: "+ str(self.MQTT_PORT)
+        return datosMQTT
 
+    def __repr__(self):
+        return self.__str__
 
+#Configuracion inicial de logging
+def configuracionLoggin():
+    logging.basicConfig(
+    level = logging.INFO, 
+    format = '[%(levelname)s] (%(threadName)-10s) %(message)s'
+    )
 
-
-configuracionesServidor.configuracionLoggin()
+configuracionLoggin()
 
 #Callback que se ejecuta cuando nos conectamos al broker
 def on_connect(client, userdata, rc):
@@ -66,8 +87,6 @@ client.on_message = on_message #Se configura la funcion "Handler" que se activa 
 client.username_pw_set(MQTT_USER, MQTT_PASS) #Credenciales requeridas por el broker, user y pass
 client.connect(host=MQTT_HOST, port = MQTT_PORT) #Conectar al servidor remoto
 #host es la ip, y el puerto el puerto xD si lo dejamos vacio lo conecta al 1883 (CREO)
-
-
 
 #Nos conectaremos a distintos topics:
 qos = 2

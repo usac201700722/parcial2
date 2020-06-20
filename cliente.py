@@ -2,8 +2,7 @@ import paho.mqtt.client as paho
 import logging
 import time
 import random
-
-from brokerData import * #Informacion de la conexion
+from brokerdata import * #Informacion de la conexion
 
 '''
 Ejemplo de cliente MQTT: gateway de red de sensores
