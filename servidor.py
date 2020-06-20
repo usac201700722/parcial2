@@ -11,17 +11,14 @@ USER_FILENAME = 'usuarios'
 
 class configuracionesServidor(object):
 
-    def __init__(self, MQTT_HOST, MQTT_PORT, MQTT_USER, MQTT_PASS):
-        self.MQTT_HOST = MQTT_HOST
-        self.MQTT_PORT = MQTT_PORT
-        self.MQTT_USER = MQTT_USER
-        self.MQTT_PASS = MQTT_PASS
+    def __init__(self, filename='', qos=2):
+        self.filename = filename
+        self.qos = qos
 
 
-    def subSalas(self, filename = 'salas', qos=2):
+    def subSalas(self):
         datos = []
-        filename=str(filename)
-        archivo = open(filename,'r') 
+        archivo = open(self.filename,'r') 
         for line in archivo:
             registro = line.split('S')
             registro[-1] = registro[-1].replace('\n', '')
@@ -32,23 +29,23 @@ class configuracionesServidor(object):
             #client.subscribe(("salas/"+str(i[0])+"/S"+str(i[1]), qos))
             logging.debug("salas/"+str(i[0])+"/S"+str(i[1]))
     
-    def subUsuarios(self,filename='usuarios', qos=2):
+    def subUsuarios(self):
         datos = []
-        archivo = open(filename,'r') #Abrir el archivo en modo de LECTURA
+        archivo = open(self.filename,'r') #Abrir el archivo en modo de LECTURA
         for line in archivo: #Leer cada linea del archivo
             registro = line.split(',')
             registro[-1] = registro[-1].replace('\n', '')
             datos.append(registro) 
         archivo.close() #Cerrar el archivo al finalizar       
         for i in datos:
-            client.subscribe(("usuarios/"+str(i[0]), qos))
+            client.subscribe(("usuarios/"+str(i[0]), self.qos))
             logging.debug("usuarios/"+str(i[0]))
     
     def subComandos(self, qos=2):
-        client.subscribe("comandos/08/#",qos)
+        client.subscribe("comandos/08/#",self.qos)
 
     def __str__(self):
-        datosMQTT="HOST: "+str(self.MQTT_HOST)+"PUERTO: "+ str(self.MQTT_PORT)
+        datosMQTT="Archivo de datos: "+str(self.filename)+" Qos: "+ str(self.qos)
         return datosMQTT
 
     def __repr__(self):
@@ -74,8 +71,7 @@ def on_message(client, userdata, msg):	#msg contiene el topic y la info que lleg
     #Y se almacena en el log 
     logCommand = 'echo "(' + str(msg.topic) + ') -> ' + str(msg.payload) + '" >> ' + LOG_FILENAME
     os.system(logCommand)
-	#Al usar este comando solo funciona en linux, por los comandos que estoy usando.
-	#Aqui escribo en un archivo de texto el mensaje que entra del topic
+
 
 
 client = mqtt.Client(clean_session=True) #Nueva instancia de cliente, iniciamos con una #sesion limpia
@@ -87,23 +83,15 @@ client.username_pw_set(MQTT_USER, MQTT_PASS) #Credenciales requeridas por el bro
 client.connect(host=MQTT_HOST, port = MQTT_PORT) #Conectar al servidor remoto
 #host es la ip, y el puerto el puerto xD si lo dejamos vacio lo conecta al 1883 (CREO)
 
-#Nos conectaremos a distintos topics:
+#*********** Suscripciones del servidor ******************
 qos = 1
-
-configuracionesServidor.subUsuarios(1)
-#configuracionesServidor.subSalas(SALAS_FILENAME,qos)
-#configuracionesServidor.subComandos(qos)
-
-#Subscripcion simple con tupla (topic,qos)
-#client.subscribe(("usuarios/201709161", qos))	#Aqui nos estamos suscribiendo a 1 topic
-'''
-#Subscripcion multiple con lista de tuplas
-client.subscribe([("sensores/8/#", qos), ("sensores/+/atm", qos), ("sensores/0/temp", qos)])
-#Enviamos una lista de tuplas para sub a varios topics a la vez
-'''
-
-
-
+user = configuracionesServidor(USER_FILENAME,qos)
+user.subUsuarios()
+salas = configuracionesServidor(SALAS_FILENAME,qos)
+salas.subSalas()
+comandos = configuracionesServidor(qos)
+comandos.subComandos(qos)
+#***********************************************************
 #Iniciamos el thread (implementado en paho-mqtt) para estar atentos a mensajes en los topics subscritos
 client.loop_start()	#COn esto hacemos que las sub funcionen
 #El thread de MQTT queda en el fondo, mientras en el main loop hacemos otra cosa
