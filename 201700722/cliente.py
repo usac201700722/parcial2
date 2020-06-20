@@ -1,6 +1,7 @@
 import paho.mqtt.client as paho
 import logging
 import time
+import socket
 import random
 import os
 import sys       #Requerido para salir (sys.exit())
@@ -59,45 +60,30 @@ class configuracionCLiente(object):
     def __repr__(self):
         return self.__str__
 
+class hilos(object):
+    def __init__(self,tiempo):
+        self.tiempo=tiempo
+        self.hiloGrabar=threading.Thread(name = 'loquesea',
+                        target = hilos.grabarAudio,
+                        args = (self,self.tiempo),
+                        daemon = True
+                        )
+    def grabarAudio(self,tiempo=0):
+        grabador = str("arecord -d "+str(tiempo)+" -f U8 -r 8000 ultimoAudio.wav")
+        logging.info('Comenzando la grabación')
+        os.system(grabador)
+        logging.info('***Grabación finalizada***')
+
 #Configuracion inicial de logging
 logging.basicConfig(
     level = logging.DEBUG, 
     format = '[%(levelname)s] (%(processName)-10s) %(message)s'
     )
 
-#Nombres de Topics de ejemplo
-SENSORES    = 'sensores'
-PRESION_A   = 'atm'
-HUMEDAD     = 'hum'
-TEMPERATURA = 'temp'
 
-#Cantidad de sensores de ejemplo que se simulan
-CNT_SENSORES = 10
 
 #Tiempo de espera entre lectura y envio de dato 
-DEFAULT_DELAY = 5 
-
-
-#Clase que simula la adquisición de los datos de los sensores de los nodos remotos de la red
-class RemoteSensors(object):
-    def __init__(self, sensorCount):
-        self.sensorCount = sensorCount
-    
-    def getHumedad(self, sensorIndex): #Simulamos la data generada por un conjunto de sensores DHT-22
-        return random.randrange(40, 100, 2)
-
-    def getTemperatura(self, sensorIndex): #Simulamos la data generada por un conjunto de sensores DS18S20
-        return random.randrange(15, 40, 1)
-
-    def getPresionA(self, sensorIndex): #Simulamos la data generada por un conjunto de sensores BMP280
-        return random.randrange(700, 1014, 1) 
-
-    def getSensorTypes(self):
-        return 3 #Devuelve la cantidad de tipos de sensores que hay instalados en la red de sensores
-
-    def getSensorCount(self): #Devuelve la cantidad de sensores (por cada tipo) en la red
-        return self.sensorCount
-
+DEFAULT_DELAY = 2 
 
 #Handler en caso suceda la conexion con el broker MQTT
 def on_connect(client, userdata, flags, rc): 
@@ -115,7 +101,24 @@ def on_message(client, userdata, msg):	#msg contiene el topic y la info que lleg
     logging.info("Ha llegado el mensaje al topic: " + str(msg.topic)) #de donde vino el mss
     logging.info("El contenido del mensaje es: " + str(msg.payload))#que vino en el mss
 
+def conexionTCP(SERVER_IP,SERVER_PORT, BUFFER_SIZE):
+    # Se crea socket TCP
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+    # Se conecta al puerto donde el servidor se encuentra a la escucha
+    server_address = (SERVER_IP, SERVER_PORT)
+    print('Conectando a {} en el puerto {}'.format(*server_address))
+    sock.connect(server_address)
+
+    try:
+        # Se envia un texto codificado EN BINARIO
+        message = b'Este es un mensaje fue enviado por TCP'
+        print('\n\nEnviando el siguiente texto:  {!s}'.format(message))
+        sock.sendall(message) #Se envia utilizando "socket.sendall" 
+
+    finally:
+        print('\n\nConexion finalizada con el servidor')
+        sock.close()
 
 logging.info("Cliente MQTT con paho-mqtt") #Mensaje en consola
 
@@ -144,8 +147,6 @@ def publishData(topicRoot, topicName, value, qos = 0, retain = False):
     client.publish(topic, value, qos, retain)
 	#Publica de forma ordenada los valores del topic
 
-
-
 print('''
 Menú:
 1- Enviar texto
@@ -161,8 +162,7 @@ Menú:
 client.loop_start()
 #Loop principal: leer los datos de los sensores y enviarlos al broker en los topics adecuados cada cierto tiempo
 try:
-    while True:
-        
+    while True:       
         comando = input("Ingrese el comando: ")
 
         if comando == "1a":
@@ -177,18 +177,17 @@ try:
         elif comando == "2a":
             topic_send = input("Ingrese el usuario al que desea enviar el audio: ")
             duracion = int(input("Ingrese la duracion del audio en segundos: "))
-            grabador = str("arecord -d "+str(duracion)+" -f U8 -r 8000 ultimoAudio.wav")
-            logging.info('Comenzando la grabación')
-            os.system(grabador)
-            logging.info('Grabación finalizada')
-
+            grabar = hilos(duracion)
+            grabar.hiloGrabar.start()
+        elif comando == "2b":
+            topic_send = input("Ingrese la sala ala que desea enviar el audio: ")
+            duracion = int(input("Ingrese la duracion del audio en segundos: "))
+            grabar = hilos(duracion)
+            grabar.hiloGrabar.start()
         else:
             logging.error("El comando ingresado es incorrecto, recuerde ver las instrucciones")
-        
-        
-        client.publish("usuarios/201709161", "hola a todos" , 1, False)        
+               
         logging.debug("Los datos han sido enviados al broker")            
-
         #Retardo hasta la proxima publicacion de info
         time.sleep(DEFAULT_DELAY)
 

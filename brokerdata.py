@@ -7,3 +7,9 @@ MQTT_PORT = 1883
 #no es buena practica dejar escritas en el codigo las credenciales
 MQTT_USER = "proyectos"
 MQTT_PASS = "proyectos980"
+
+#Parametros de conexion TCP
+IP_ADDR = '' #La IP donde desea levantarse el server
+IP_ADDR_ALL = '' #En caso que se quiera escuchar en todas las interfaces de red
+IP_PORT = 9800 #Puerto al que deben conectarse los clientes
+BUFFER_SIZE = 64 * 1024

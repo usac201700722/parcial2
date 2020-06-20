@@ -2,6 +2,9 @@ import paho.mqtt.client as paho
 import logging
 import time
 import random
+import os
+import sys       #Requerido para salir (sys.exit())
+import threading #Concurrencia con hilos
 from brokerdata import * #Informacion de la conexion
 
 '''
@@ -11,55 +14,69 @@ USER_FILENAME ='usuario'
 SALAS_FILENAME = 'salas'
 
 class configuracionCLiente(object):
-    def __init__(self,MQTT_HOST, MQTT_PORT, MQTT_USER, MQTT_PASS):
-        self.MQTT_HOST = MQTT_HOST
-        self.MQTT_PORT = MQTT_PORT
-        self.MQTT_USER = MQTT_USER
-        self.MQTT_PASS = MQTT_PASS
-    def subComandos(self,filename='usuario',qos=2):
-        datos = []
-        archivo = open(filename,'r') #Abrir el archivo en modo de LECTURA
-        for line in archivo: #Leer cada linea del archivo
-            registro = line
-            datos.append(registro) 
-        archivo.close() #Cerrar el archivo al finalizar
-        for i in datos:
-            client.subscribe(("comandos/"+str(i), qos))
-            logging.debug("comandos/"+str(i))
-    
-    def subUsuarios(self,filename='usuario',qos=2):
-        datos = []
-        archivo = open(filename,'r') #Abrir el archivo en modo de LECTURA
-        for line in archivo: #Leer cada linea del archivo
-            registro = line
-            datos.append(registro) 
-        archivo.close() #Cerrar el archivo al finalizar
-        for i in datos:
-            client.subscribe(("usuarios/"+str(i), qos))
-            logging.debug("usuarios/"+str(i))
+    def __init__(self,filename='', qos=2):
+        self.filename = filename
+        self.qos = qos
 
-    def subSalas(self, filename='salas', qos=2):
+    def subComandos(self):
         datos = []
-        archivo = open(filename,'r') #Abrir el archivo en modo de LECTURA
+        archivo = open(self.filename,'r') #Abrir el archivo en modo de LECTURA
+        for line in archivo: #Leer cada linea del archivo
+            registro = line.split('\n')
+            datos.append(registro) 
+        archivo.close() #Cerrar el archivo al finalizar
+        for i in datos:
+            client.subscribe(("comandos/"+str(i[0]), self.qos))
+            logging.debug("comandos/"+str(i[0]))
+    
+    def subUsuarios(self):
+        datos = []
+        archivo = open(self.filename,'r') #Abrir el archivo en modo de LECTURA
+        for line in archivo: #Leer cada linea del archivo
+            registro = line.split('\n')
+            datos.append(registro) 
+        archivo.close() #Cerrar el archivo al finalizar
+        for i in datos:
+            client.subscribe(("usuarios/"+str(i[0]), self.qos))
+            logging.debug("usuarios/"+str(i[0]))
+
+    def subSalas(self):
+        datos = []
+        archivo = open(self.filename,'r') #Abrir el archivo en modo de LECTURA
         for line in archivo: #Leer cada linea del archivo
             registro = line.split('S')
             registro[-1] = registro[-1].replace('\n', '')
             datos.append(registro) 
         archivo.close() #Cerrar el archivo al finalizar
         for i in datos:
-            client.subscribe(("salas/"+str(i[0])+"/S"+str(i[1]), qos))
+            client.subscribe(("salas/"+str(i[0])+"/S"+str(i[1]), self.qos))
             logging.debug("salas/"+str(i[0])+"/S"+str(i[1]))
 
     def __str__(self):
-        datosMQTT="HOST: "+str(self.MQTT_HOST)+"PUERTO: "+ str(self.MQTT_PORT)
+        datosMQTT="Archivo de datos: "+str(self.filename)+" qos: "+ str(self.qos)
         return datosMQTT
 
     def __repr__(self):
         return self.__str__
 
+
+class hilos(object):
+    def __init__(self,tiempo):
+        self.tiempo=tiempo
+        self.hiloGrabar=threading.Thread(name = 'loquesea',
+                        target = hilos.grabarAudio,
+                        args = (self,self.tiempo),
+                        daemon = True
+                        )
+    def grabarAudio(self,tiempo=0):
+        grabador = str("arecord -d "+str(tiempo)+" -f U8 -r 8000 ultimoAudio.wav")
+        logging.info('Comenzando la grabación')
+        os.system(grabador)
+        logging.info('***Grabación finalizada***')
+
 #Configuracion inicial de logging
 logging.basicConfig(
-    level = logging.INFO, 
+    level = logging.DEBUG, 
     format = '[%(levelname)s] (%(processName)-10s) %(message)s'
     )
 
@@ -72,8 +89,8 @@ TEMPERATURA = 'temp'
 #Cantidad de sensores de ejemplo que se simulan
 CNT_SENSORES = 10
 
-#Tiempo de espera entre lectura y envio de dato de sensores a broker (en segundos)
-DEFAULT_DELAY = 60 #1 minuto
+#Tiempo de espera entre lectura y envio de dato 
+DEFAULT_DELAY = 5 
 
 
 #Clase que simula la adquisición de los datos de los sensores de los nodos remotos de la red
@@ -97,8 +114,6 @@ class RemoteSensors(object):
         return self.sensorCount
 
 
-
-
 #Handler en caso suceda la conexion con el broker MQTT
 def on_connect(client, userdata, flags, rc): 
     connectionText = "CONNACK recibido del broker con codigo: " + str(rc)
@@ -109,9 +124,15 @@ def on_publish(client, userdata, mid):
     publishText = "Publicacion satisfactoria"
     logging.debug(publishText)
 
+#Callback que se ejecuta cuando llega un mensaje al topic suscrito
+def on_message(client, userdata, msg):	#msg contiene el topic y la info que llego
+    #Se muestra en pantalla informacion que ha llegado
+    logging.info("Ha llegado el mensaje al topic: " + str(msg.topic)) #de donde vino el mss
+    logging.info("El contenido del mensaje es: " + str(msg.payload))#que vino en el mss
+
+
 
 logging.info("Cliente MQTT con paho-mqtt") #Mensaje en consola
-
 
 '''
 Config. inicial del cliente MQTT
@@ -119,42 +140,68 @@ Config. inicial del cliente MQTT
 client = paho.Client(clean_session=True) #Nueva instancia de cliente
 client.on_connect = on_connect #Se configura la funcion "Handler" cuando suceda la conexion
 client.on_publish = on_publish #Se configura la funcion "Handler" que se activa al publicar algo
+client.on_message = on_message
 client.username_pw_set(MQTT_USER, MQTT_PASS) #Credenciales requeridas por el broker
 client.connect(host=MQTT_HOST, port = MQTT_PORT) #Conectar al servidor remoto
 
-#Mensaje de prueba MQTT en el topic "test"
-client.publish("test", "Mensaje inicial", qos = 0, retain = False)
 
+#************* Suscripciones del servidor *********
+comandos= configuracionCLiente(USER_FILENAME,2)
+comandos.subComandos()
+usuarios = configuracionCLiente(USER_FILENAME,2)
+usuarios.subUsuarios()
+salas = configuracionCLiente(SALAS_FILENAME,2)
+salas.subSalas()
+#***************************************************
 
 def publishData(topicRoot, topicName, value, qos = 0, retain = False):
     topic = topicRoot + "/" + topicName
     client.publish(topic, value, qos, retain)
 	#Publica de forma ordenada los valores del topic
 
+print('''
+Menú:
+1- Enviar texto
+    a. Enviar a usuario --> PRESIONE "1a"
+    b. Enviar a sala    --> PRESIONE "1b"
+2- Enviar mensaje de voz
+    a. Enviar a usuario --> PRESIONE "2a"
+        i. Duración (Segundos)
+    b. Enviar a sala    --> PRESIONE "2b"
+        i. Duración (Segundos)
+''')
 
-#Instancia de la clase que simula la lectura de datos de sensores remotos
-sensores = RemoteSensors(CNT_SENSORES) 
-
+client.loop_start()
 #Loop principal: leer los datos de los sensores y enviarlos al broker en los topics adecuados cada cierto tiempo
 try:
-    while True:
+    while True:       
+        comando = input("Ingrese el comando: ")
 
-
-        #Para temperatura
-        for i in range(sensores.getSensorCount()):
-            publishData(SENSORES, (str(i) + "/" + TEMPERATURA), sensores.getTemperatura(i))
-            
+        if comando == "1a":
+            topic_send = input("Ingrese el numero de usuario: ")
+            mensaje = input("Texto a enviar: ")
+            #mensaje=mensaje.encode()
+            client.publish("usuarios/"+str(topic_send),mensaje,1,False)
+        elif comando == "1b":
+            topic_send = input("Ingrese el nombre de la sala: ")
+            mensaje = input("Texto a enviar: ")
+            client.publish("usuarios/"+str(topic_send),mensaje,1,False)
+        elif comando == "2a":
+            topic_send = input("Ingrese el usuario al que desea enviar el audio: ")
+            duracion = int(input("Ingrese la duracion del audio en segundos: "))
+            grabar = hilos(duracion)
+            grabar.hiloGrabar.start()
+        elif comando == "2b":
+            topic_send = input("Ingrese la sala ala que desea enviar el audio: ")
+            duracion = int(input("Ingrese la duracion del audio en segundos: "))
+            grabar = hilos(duracion)
+            grabar.hiloGrabar.start()
+        else:
+            logging.error("El comando ingresado es incorrecto, recuerde ver las instrucciones")
         
-        #Para humedad
-        for i in range(sensores.getSensorCount()):
-            publishData(SENSORES, (str(i) + "/" + HUMEDAD), sensores.getHumedad(i))
-
-        #Para presion
-        for i in range(sensores.getSensorCount()):
-            publishData(SENSORES, (str(i) + "/" + PRESION_A), sensores.getPresionA(i))
-
-
-        logging.info("Los datos han sido enviados al broker")            
+        
+        client.publish("usuarios/201709161", "hola a todos" , 1, False)        
+        logging.debug("Los datos han sido enviados al broker")            
 
         #Retardo hasta la proxima publicacion de info
         time.sleep(DEFAULT_DELAY)
@@ -163,5 +210,6 @@ except KeyboardInterrupt:
     logging.warning("Desconectando del broker MQTT...")
 
 finally:
+    client.loop_stop()
     client.disconnect()
     logging.info("Se ha desconectado del broker. Saliendo...")
