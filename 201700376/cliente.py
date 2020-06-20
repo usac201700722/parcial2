@@ -151,11 +151,11 @@ try:
         if comando == "1a":
             topic_send = input("Ingrese el numero de usuario: ")
             mensaje = input("Texto a enviar: ")
-            client.publish("usuarios/"+str(topic_send),mensaje,1,False)
+            client.publish("usuarios/"+str(topic_send),mensaje,2,False)
         elif comando == "1b":
             topic_send = input("Ingrese el nombre de la sala: ")
             mensaje = input("Texto a enviar: ")
-            client.publish("usuarios/"+str(topic_send),mensaje,1,False)
+            client.publish("usuarios/"+str(topic_send),mensaje,2,False)
         elif comando == "2a":
             topic_send = input("Ingrese el usuario al que desea enviar el audio: ")
             duracion = int(input("Ingrese la duracion del audio en segundos: "))

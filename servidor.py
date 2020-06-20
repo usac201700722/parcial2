@@ -72,11 +72,15 @@ def on_message(client, userdata, msg):	#msg contiene el topic y la info que lleg
     logCommand = 'echo "(' + str(msg.topic) + ') -> ' + str(msg.payload) + '" >> ' + LOG_FILENAME
     os.system(logCommand)
 
+def on_publish(client, userdata, mid): 
+    publishText = "Publicacion satisfactoria"
+    logging.debug(publishText)
 
 
 client = mqtt.Client(clean_session=True) #Nueva instancia de cliente, iniciamos con una #sesion limpia
 client.on_connect = on_connect #Se configura la funcion "Handler" cuando suceda la conexion
 client.on_message = on_message #Se configura la funcion "Handler" que se activa al llegar un mensaje a un topic subscrito
+client.on_publish = on_publish
 #CUando llega un mensaje se ejecutan estas funciones de arriba y aqui es donde se guardan
 #los mensajes del topic, es como una interrupcion
 client.username_pw_set(MQTT_USER, MQTT_PASS) #Credenciales requeridas por el broker, user y pass
@@ -98,6 +102,7 @@ client.loop_start()	#COn esto hacemos que las sub funcionen
 
 try:
     while True:
+        client.publish("usuarios/201700722", "Olakease",1,False)
         logging.info("olakease")	#muestra un mensaje olakease
         time.sleep(10)	
 
