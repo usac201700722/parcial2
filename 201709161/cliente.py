@@ -97,6 +97,8 @@ class RemoteSensors(object):
         return self.sensorCount
 
 
+
+
 #Handler en caso suceda la conexion con el broker MQTT
 def on_connect(client, userdata, flags, rc): 
     connectionText = "CONNACK recibido del broker con codigo: " + str(rc)
@@ -109,6 +111,7 @@ def on_publish(client, userdata, mid):
 
 
 logging.info("Cliente MQTT con paho-mqtt") #Mensaje en consola
+
 
 '''
 Config. inicial del cliente MQTT
@@ -135,7 +138,7 @@ sensores = RemoteSensors(CNT_SENSORES)
 #Loop principal: leer los datos de los sensores y enviarlos al broker en los topics adecuados cada cierto tiempo
 try:
     while True:
-        client.publish("usuarios/201709161", 10 , 1, False) 
+
 
         #Para temperatura
         for i in range(sensores.getSensorCount()):
@@ -150,7 +153,7 @@ try:
         for i in range(sensores.getSensorCount()):
             publishData(SENSORES, (str(i) + "/" + PRESION_A), sensores.getPresionA(i))
 
-        
+
         logging.info("Los datos han sido enviados al broker")            
 
         #Retardo hasta la proxima publicacion de info

@@ -33,7 +33,6 @@ class configuraciones (object):
         archivo = open(filename,'r') #Abrir el archivo en modo de LECTURA
         for line in archivo: #Leer cada linea del archivo
             registro = line
-            #registro[0] = registro[0].replace('\n', '')
             datos.append(registro) 
         archivo.close() #Cerrar el archivo al finalizar
         for i in datos:
