@@ -2,6 +2,7 @@ import paho.mqtt.client as paho
 import logging
 import time
 import random
+import os
 from brokerdata import * #Informacion de la conexion
 
 '''
@@ -155,6 +156,13 @@ try:
             topic_send = input("Ingrese el nombre de la sala: ")
             mensaje = input("Texto a enviar: ")
             client.publish("usuarios/"+str(topic_send),mensaje,1,False)
+        elif comando == "2a":
+            topic_send = input("Ingrese el usuario al que desea enviar el audio: ")
+            duracion = int(input("Ingrese la duracion del audio en segundos: "))
+            grabador = str("arecord -d "+str(duracion)+" -f U8 -r 8000 ultimoAudio.wav")
+            logging.info('Comenzando la grabación')
+            os.system(grabador)
+            logging.info('Grabación finalizada')
         else:
             logging.error("El comando ingresado es incorrecto, recuerde ver las instrucciones")
 
