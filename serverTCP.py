@@ -3,19 +3,16 @@ import socket
 # Crea un socket TCP
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-IP_ADDR = '157.245.82.242' #La IP donde desea levantarse el server
+IP_ADDR = '167.71.243.238' #La IP donde desea levantarse el server
 IP_ADDR_ALL = '' #En caso que se quiera escuchar en todas las interfaces de red
 IP_PORT = 9808 #Puerto al que deben conectarse los clientes
 
-BUFFER_SIZE = 16 * 1024 #Bloques de 16 KB
+BUFFER_SIZE = 64 * 1024 #Bloques de 16 KB
 
 # Bind the socket to the port
 serverAddress = (IP_ADDR_ALL, IP_PORT) #Escucha en todas las interfaces
 print('Iniciando servidor en {}, puerto {}'.format(*serverAddress))
 sock.bind(serverAddress) #Levanta servidor con parametros especificados
-
-#Existe una nueva funcion en Python 3.8: socket.create_server()
-#Tiene poca documentación aún, por lo que utilizaremos socket.bind() + socket.listen()
 
 # Habilita la escucha del servidor en las interfaces configuradas
 sock.listen(10) #El argumento indica la cantidad de conexiones en cola

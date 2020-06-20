@@ -9,12 +9,12 @@ MQTT_USER = "proyectos"
 MQTT_PASS = "proyectos980"
 
 #Parametros de conexion TCP servidor
-IP_ADDR = '157.245.82.242' #La IP donde desea levantarse el server
+IP_ADDR = '167.71.243.238' #La IP donde desea levantarse el server
 IP_ADDR_ALL = '' #En caso que se quiera escuchar en todas las interfaces de red
 IP_PORT = 9808 #Puerto al que deben conectarse los clientes
 BUFFER_SIZE = 64 * 1024
 
 #Parametros conexion TCP Cliente
-SERVER_IP   = '157.245.82.242'
+SERVER_IP   = '167.71.243.238'
 SERVER_PORT = 9808
 BUFFER_SIZE = 16 * 1024
