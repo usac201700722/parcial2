@@ -34,7 +34,9 @@ while True:
                 connection.sendall(data)
             else:
                 print('Transmision finalizada desde el cliente ', clientAddress)
-                break
+		sock.close()
+		connection.close()                
+		break
     
     except KeyboardInterrupt:
         sock.close()
