@@ -100,27 +100,41 @@ def on_message(client, userdata, msg):	#msg contiene el topic y la info que lleg
     logging.info("Ha llegado el mensaje al topic: " + str(msg.topic)) #de donde vino el mss
     logging.info("El contenido del mensaje es: " + str(msg.payload))#que vino en el mss
 
-def conexionTCP(server_ip,server_port, buffer_size):
+def conexionTCP(SERVER_IP,SERVER_PORT, BUFFER_SIZE):
+    SERVER_IP   = '167.71.243.238'
+    SERVER_PORT = 9808
+    BUFFER_SIZE = 64 * 1024
+
     # Se crea socket TCP
-    #client.disconnect()
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Se conecta al puerto donde el servidor se encuentra a la escucha
-    server_address = (server_ip, server_port)
+    server_address = (SERVER_IP, SERVER_PORT)
     print('Conectando a {} en el puerto {}'.format(*server_address))
     sock.connect(server_address)
 
     try:
+
         # Se envia un texto codificado EN BINARIO
-        message = b'Este es un mensaje fue enviado por TCP'
+        message = b'Este es un mensaje.  El texto se divide en bloques de BUFFER_SIZE bytes.'
         print('\n\nEnviando el siguiente texto:  {!s}'.format(message))
         sock.sendall(message) #Se envia utilizando "socket.sendall" 
+
+        print("\n\n")
+
+        # Esperamos la respuesta del ping servidor
+        bytesRecibidos = 0
+        bytesEsperados = len(message)
+
+        #TCP envia por bloques de BUFFER_SIZE bytes
+        while bytesRecibidos < bytesEsperados:
+            data = sock.recv(BUFFER_SIZE)
+            bytesRecibidos += len(data)
+            print('Recibido: {!s}'.format(data))
 
     finally:
         print('\n\nConexion finalizada con el servidor')
         sock.close()
-        #client.connect(host=MQTT_HOST, port = MQTT_PORT) #Conectar al servidor remoto
-
 
 logging.info("Cliente MQTT con paho-mqtt") #Mensaje en consola
 

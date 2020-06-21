@@ -57,8 +57,6 @@ def conexionTCP(IP_ADDR,IP_ADDR_ALL,IP_PORT,BUFFER_SIZE):
     # Crea un socket TCP
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    BUFFER_SIZE = 16 * 1024 #Bloques de 16 KB
-
     # Bind the socket to the port
     serverAddress = (IP_ADDR_ALL, IP_PORT) #Escucha en todas las interfaces
     print('Iniciando servidor en {}, puerto {}'.format(*serverAddress))
@@ -87,15 +85,10 @@ def conexionTCP(IP_ADDR,IP_ADDR_ALL,IP_PORT,BUFFER_SIZE):
                     connection.sendall(data)
                 else:
                     print('Transmision finalizada desde el cliente ', clientAddress)
-                    sock.close()
-                    connection.close()
-            
+                    break
+        
         except KeyboardInterrupt:
             sock.close()
-
-        finally:
-            # Se baja el servidor para dejar libre el puerto para otras aplicaciones o instancias de la aplicacion
-            connection.close()
 
 
 #Configuracion inicial de logging
