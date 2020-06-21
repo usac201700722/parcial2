@@ -81,7 +81,6 @@ logging.basicConfig(
     )
 
 
-
 #Tiempo de espera entre lectura y envio de dato 
 DEFAULT_DELAY = 2 
 
