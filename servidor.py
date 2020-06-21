@@ -55,25 +55,22 @@ class configuracionesServidor(object):
         return self.__str__
 
 class hiloTCP(object):
-    def __init__(self,IP_ADDR,IP_ADDR_ALL,IP_PORT,BUFFER_SIZE):
+    def __init__(self,IP_ADDR):
         self.IP_ADDR=IP_ADDR
-        self.IP_ADDR_ALL=IP_ADDR_ALL
-        self.IP_PORT=IP_PORT
-        self.BUFFER_SIZE=BUFFER_SIZE
         self.hiloRecibidor=threading.Thread(name = 'Guardar nota de voz',
                         target = hiloTCP.conexionTCP,
-                        args = (self,self.IP_ADDR,self.IP_ADDR_ALL,self,IP_PORT,self.BUFFER_SIZE),
+                        args = (self,self.IP_ADDR),
                         daemon = True
                         )
 
-    def conexionTCP(self,IP_ADDR,IP_ADDR_ALL,IP_PORT,BUFFER_SIZE):
+    def conexionTCP(self, IP_ADDR):
         # Crea un socket TCP
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        IP_ADDR = self.IP_ADDR #La IP donde desea levantarse el server
-        IP_ADDR_ALL = self.IP_ADDR_ALL #En caso que se quiera escuchar en todas las interfaces de red
-        IP_PORT = self.IP_PORT #Puerto al que deben conectarse los clientes
-        BUFFER_SIZE = self.BUFFER_SIZE
+        self.IP_ADDR ='167.71.243.238' #La IP donde desea levantarse el server
+        IP_ADDR_ALL = '' #En caso que se quiera escuchar en todas las interfaces de red
+        IP_PORT = 9808 #Puerto al que deben conectarse los clientes
+        BUFFER_SIZE = 64*1024
 
         # Bind the socket to the port
         serverAddress = (IP_ADDR_ALL, IP_PORT) #Escucha en todas las interfaces
@@ -163,7 +160,7 @@ try:
         
         if comandoIn=="archivo":
             print("**************************************")
-            recibe = hiloTCP(IP_ADDR,IP_ADDR_ALL,IP_PORT,BUFFER_SIZE)
+            recibe = hiloTCP(IP_ADDR)
             recibe.hiloRecibidor.start()
             
 
