@@ -96,9 +96,9 @@ class hiloTCP(object):
                     archivo.close()
                     print('Transmision finalizada desde el cliente ', clientAddress)
                     sock.close()
-                    connection.close()
-                    bandera = False
-                    break
+                connection.close()
+                bandera = False
+                break
             
             except KeyboardInterrupt:
                 sock.close()
