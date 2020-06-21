@@ -166,8 +166,6 @@ client.loop_start()
 #Loop principal: leer los datos de los sensores y enviarlos al broker en los topics adecuados cada cierto tiempo
 try:
     while True: 
-        print(SERVER_IP)
-        print(SERVER_PORT)
         comando = input("Ingrese el comando: ")
 
         if comando == "1a":
@@ -200,5 +198,5 @@ except KeyboardInterrupt:
 
 finally:
     client.loop_stop()
-    #client.disconnect()
+    client.disconnect()
     logging.info("Se ha desconectado del broker. Saliendo...")
