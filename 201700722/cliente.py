@@ -63,7 +63,7 @@ class configuracionCLiente(object):
 class hilos(object):
     def __init__(self,tiempo):
         self.tiempo=tiempo
-        self.hiloGrabar=threading.Thread(name = 'loquesea',
+        self.hiloGrabar=threading.Thread(name = 'Nota de voz',
                         target = hilos.grabarAudio,
                         args = (self,self.tiempo),
                         daemon = True
@@ -73,6 +73,51 @@ class hilos(object):
         logging.info('Comenzando la grabación')
         os.system(grabador)
         logging.info('***Grabación finalizada***')
+
+class hiloTCP(object):
+    def __init__(self, SERVER_IP):
+        self.SERVER_IP=SERVER_IP
+        self.hiloConexion=threading.Thread(name = 'Concexion por TCP',
+                        target = hiloTCP.conexionTCP,
+                        args = (self,self.SERVER_IP),
+                        daemon = True
+                        )
+    def conexionTCP(self, SERVER_IP):
+        self.SERVER_IP   = '167.71.243.238'
+        SERVER_PORT = 9808
+        BUFFER_SIZE = 64 * 1024
+        time.sleep(10)
+        # Se crea socket TCP
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        # Se conecta al puerto donde el servidor se encuentra a la escucha
+        server_address = (self.SERVER_IP, SERVER_PORT)
+        print('Conectando a {} en el puerto {}'.format(*server_address))
+        sock.connect(server_address)
+
+        try:
+
+            # Se envia un texto codificado EN BINARIO
+            message = b'Este es un mensaje.  El texto se divide en bloques de BUFFER_SIZE bytes.'
+            print('\n\nEnviando el siguiente texto:  {!s}'.format(message))
+            sock.sendall(message) #Se envia utilizando "socket.sendall" 
+
+            print("\n\n")
+
+            # Esperamos la respuesta del ping servidor
+            bytesRecibidos = 0
+            bytesEsperados = len(message)
+
+            #TCP envia por bloques de BUFFER_SIZE bytes
+            while bytesRecibidos < bytesEsperados:
+                data = sock.recv(BUFFER_SIZE)
+                bytesRecibidos += len(data)
+                print('Recibido: {!s}'.format(data))
+
+        finally:
+            print('\n\nConexion finalizada con el servidor')
+            sock.close()
+
 
 #Configuracion inicial de logging
 logging.basicConfig(
@@ -100,41 +145,6 @@ def on_message(client, userdata, msg):	#msg contiene el topic y la info que lleg
     logging.info("Ha llegado el mensaje al topic: " + str(msg.topic)) #de donde vino el mss
     logging.info("El contenido del mensaje es: " + str(msg.payload))#que vino en el mss
 
-def conexionTCP(SERVER_IP,SERVER_PORT, BUFFER_SIZE):
-    SERVER_IP   = '167.71.243.238'
-    SERVER_PORT = 9808
-    BUFFER_SIZE = 64 * 1024
-
-    # Se crea socket TCP
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    # Se conecta al puerto donde el servidor se encuentra a la escucha
-    server_address = (SERVER_IP, SERVER_PORT)
-    print('Conectando a {} en el puerto {}'.format(*server_address))
-    sock.connect(server_address)
-
-    try:
-
-        # Se envia un texto codificado EN BINARIO
-        message = b'Este es un mensaje.  El texto se divide en bloques de BUFFER_SIZE bytes.'
-        print('\n\nEnviando el siguiente texto:  {!s}'.format(message))
-        sock.sendall(message) #Se envia utilizando "socket.sendall" 
-
-        print("\n\n")
-
-        # Esperamos la respuesta del ping servidor
-        bytesRecibidos = 0
-        bytesEsperados = len(message)
-
-        #TCP envia por bloques de BUFFER_SIZE bytes
-        while bytesRecibidos < bytesEsperados:
-            data = sock.recv(BUFFER_SIZE)
-            bytesRecibidos += len(data)
-            print('Recibido: {!s}'.format(data))
-
-    finally:
-        print('\n\nConexion finalizada con el servidor')
-        sock.close()
 
 logging.info("Cliente MQTT con paho-mqtt") #Mensaje en consola
 
@@ -198,7 +208,9 @@ try:
         elif comando == "2b":
             topic_send = input("Ingrese el nombre de la sala: ")
             client.publish("usuarios/"+str(topic_send),"archivo",1,False)
-            conexionTCP(SERVER_IP,IP_PORT,BUFFER_SIZE)
+            time.sleep(DEFAULT_DELAY)
+            conexion= hiloTCP(SERVER_IP)
+            conexion.hiloConexion.start()
         else:
             logging.error("El comando ingresado es incorrecto, recuerde ver las instrucciones")
                
