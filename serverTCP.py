@@ -35,9 +35,8 @@ while True:
             else:
                 print('Transmision finalizada desde el cliente ', clientAddress)
 		sock.close()
-		connection.close()                
+		connection.close()
 		break
-    
     except KeyboardInterrupt:
         sock.close()
 
