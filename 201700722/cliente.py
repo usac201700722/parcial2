@@ -103,6 +103,7 @@ def on_message(client, userdata, msg):	#msg contiene el topic y la info que lleg
 
 def conexionTCP(server_ip,server_port, buffer_size):
     # Se crea socket TCP
+    client.disconnect()
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Se conecta al puerto donde el servidor se encuentra a la escucha
@@ -119,6 +120,7 @@ def conexionTCP(server_ip,server_port, buffer_size):
     finally:
         print('\n\nConexion finalizada con el servidor')
         sock.close()
+        client.connect(host=MQTT_HOST, port = MQTT_PORT) #Conectar al servidor remoto
 
 
 logging.info("Cliente MQTT con paho-mqtt") #Mensaje en consola
@@ -163,7 +165,8 @@ Menú:
 client.loop_start()
 #Loop principal: leer los datos de los sensores y enviarlos al broker en los topics adecuados cada cierto tiempo
 try:
-    while True:       
+    while True: 
+              
         comando = input("Ingrese el comando: ")
 
         if comando == "1a":

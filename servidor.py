@@ -87,8 +87,9 @@ def conexionTCP(IP_ADDR,IP_ADDR_ALL,IP_PORT,BUFFER_SIZE):
                     connection.sendall(data)
                 else:
                     print('Transmision finalizada desde el cliente ', clientAddress)
-                    break
-        
+                    sock.close()
+                    connection.close()
+            
         except KeyboardInterrupt:
             sock.close()
 
@@ -151,8 +152,7 @@ try:
             print("**************************************")
             conexionTCP(IP_ADDR,IP_ADDR_ALL,IP_PORT,BUFFER_SIZE)
             
-        client.publish("usuarios/201700722", "Olakease",1,False)
-        logging.info("olakease")	#muestra un mensaje olakease
+
         time.sleep(10)	
 
 
