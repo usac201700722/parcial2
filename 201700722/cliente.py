@@ -82,11 +82,12 @@ class hiloTCP(object):
                         args = (self,self.SERVER_IP),
                         daemon = True
                         )
+
     def conexionTCP(self, SERVER_IP):
         self.SERVER_IP   = '167.71.243.238'
         SERVER_PORT = 9808
         BUFFER_SIZE = 64 * 1024
-        time.sleep(10)
+        time.sleep(5)
         # Se crea socket TCP
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -95,28 +96,16 @@ class hiloTCP(object):
         print('Conectando a {} en el puerto {}'.format(*server_address))
         sock.connect(server_address)
 
-        try:
-
-            # Se envia un texto codificado EN BINARIO
-            message = b'Este es un mensaje.  El texto se divide en bloques de BUFFER_SIZE bytes.'
-            print('\n\nEnviando el siguiente texto:  {!s}'.format(message))
-            sock.sendall(message) #Se envia utilizando "socket.sendall" 
-
-            print("\n\n")
-
-            # Esperamos la respuesta del ping servidor
-            bytesRecibidos = 0
-            bytesEsperados = len(message)
-
-            #TCP envia por bloques de BUFFER_SIZE bytes
-            while bytesRecibidos < bytesEsperados:
-                data = sock.recv(BUFFER_SIZE)
-                bytesRecibidos += len(data)
-                print('Recibido: {!s}'.format(data))
-
-        finally:
-            print('\n\nConexion finalizada con el servidor')
-            sock.close()
+        archivo = open('ultimoAudio.wav','rb')
+        print("Enviando...")
+        l=archivo.read(BUFFER_SIZE)
+        while l:
+            print("Sending...")
+            sock.send(l)
+            l=archivo.read(BUFFER_SIZE)
+        archivo.close()
+        print("DOne sending")
+        sock.close()
 
 
 #Configuracion inicial de logging

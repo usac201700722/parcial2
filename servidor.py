@@ -3,6 +3,7 @@ import logging
 import time
 import os 
 import socket
+import threading #Concurrencia con hilos
 from brokerdata import * 
 
 
@@ -53,42 +54,61 @@ class configuracionesServidor(object):
     def __repr__(self):
         return self.__str__
 
-def conexionTCP(IP_ADDR,IP_ADDR_ALL,IP_PORT,BUFFER_SIZE):
-    # Crea un socket TCP
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+class hiloTCP(object):
+    def __init__(self,IP_ADDR,IP_ADDR_ALL,IP_PORT,BUFFER_SIZE):
+        self.IP_ADDR=IP_ADDR
+        self.IP_ADDR_ALL=IP_ADDR_ALL
+        self.IP_PORT=IP_PORT
+        self.BUFFER_SIZE=BUFFER_SIZE
+        self.hiloRecibidor=threading.Thread(name = 'Guardar nota de voz',
+                        target = hiloTCP.conexionTCP,
+                        args = (self,self.IP_ADDR,self.IP_ADDR_ALL,self,IP_PORT,self.BUFFER_SIZE),
+                        daemon = True
+                        )
 
-    # Bind the socket to the port
-    serverAddress = (IP_ADDR_ALL, IP_PORT) #Escucha en todas las interfaces
-    print('Iniciando servidor en {}, puerto {}'.format(*serverAddress))
-    sock.bind(serverAddress) #Levanta servidor con parametros especificados
+    def conexionTCP(self,IP_ADDR,IP_ADDR_ALL,IP_PORT,BUFFER_SIZE):
+        # Crea un socket TCP
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    #Existe una nueva funcion en Python 3.8: socket.create_server()
-    #Tiene poca documentación aún, por lo que utilizaremos socket.bind() + socket.listen()
+        IP_ADDR = self.IP_ADDR #La IP donde desea levantarse el server
+        IP_ADDR_ALL = self.IP_ADDR_ALL #En caso que se quiera escuchar en todas las interfaces de red
+        IP_PORT = self.IP_PORT #Puerto al que deben conectarse los clientes
+        BUFFER_SIZE = self.BUFFER_SIZE
 
-    # Habilita la escucha del servidor en las interfaces configuradas
-    sock.listen(10) #El argumento indica la cantidad de conexiones en cola
+        # Bind the socket to the port
+        serverAddress = (IP_ADDR_ALL, IP_PORT) #Escucha en todas las interfaces
+        print('Iniciando servidor en {}, puerto {}'.format(*serverAddress))
+        sock.bind(serverAddress) #Levanta servidor con parametros especificados
 
-    while True:
-        # Esperando conexion
-        print('Esperando conexion remota')
-        connection, clientAddress = sock.accept()
-        try:
-            print('Conexion establecida desde', clientAddress)
-
-            # Se envia informacion en bloques de BUFFER_SIZE bytes
-            # y se espera respuesta de vuelta
-            while True:
-                data = connection.recv(BUFFER_SIZE)
-                print('Recibido: {!r}'.format(data))
-                if data: #Si se reciben datos (o sea, no ha finalizado la transmision del cliente)
-                    print('Enviando data de vuelta al cliente')
-                    connection.sendall(data)
-                else:
+        # Habilita la escucha del servidor en las interfaces configuradas
+        sock.listen(10) #El argumento indica la cantidad de conexiones en cola
+        bandera = True
+        while bandera==True:
+            # Esperando conexion
+            print('Esperando conexion remota')
+            connection, clientAddress = sock.accept()
+            try:
+                print('Conexion establecida desde', clientAddress)
+                archivo = open('recibidoServer.wav','wb')
+                while True:
+                    data = connection.recv(BUFFER_SIZE)  
+                    while data: #Si se reciben datos (o sea, no ha finalizado la transmision del cliente)
+                        print("Recibiendo...")
+                        archivo.write(data)
+                        data = connection.recv(BUFFER_SIZE)         
+                    archivo.close()
                     print('Transmision finalizada desde el cliente ', clientAddress)
+                    sock.close()
+                    connection.close()
+                    bandera = False
                     break
-        
-        except KeyboardInterrupt:
-            sock.close()
+            
+            except KeyboardInterrupt:
+                sock.close()
+
+            finally:
+                # Se baja el servidor para dejar libre el puerto para otras aplicaciones o instancias de la aplicacion
+                connection.close()
 
 
 #Configuracion inicial de logging
@@ -143,7 +163,8 @@ try:
         
         if comandoIn=="archivo":
             print("**************************************")
-            conexionTCP(IP_ADDR,IP_ADDR_ALL,IP_PORT,BUFFER_SIZE)
+            recibe = hiloTCP(IP_ADDR,IP_ADDR_ALL,IP_PORT,BUFFER_SIZE)
+            recibe.hiloRecibidor.start()
             
 
         time.sleep(10)	
