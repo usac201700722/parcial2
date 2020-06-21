@@ -88,7 +88,7 @@ DEFAULT_DELAY = 2
 #Handler en caso suceda la conexion con el broker MQTT
 def on_connect(client, userdata, flags, rc): 
     connectionText = "CONNACK recibido del broker con codigo: " + str(rc)
-    logging.info(connectionText)
+    logging.debug(connectionText)
 
 #Handler en caso se publique satisfactoriamente en el broker MQTT
 def on_publish(client, userdata, mid): 
@@ -103,7 +103,7 @@ def on_message(client, userdata, msg):	#msg contiene el topic y la info que lleg
 
 def conexionTCP(server_ip,server_port, buffer_size):
     # Se crea socket TCP
-    client.disconnect()
+    #client.disconnect()
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Se conecta al puerto donde el servidor se encuentra a la escucha
@@ -120,7 +120,7 @@ def conexionTCP(server_ip,server_port, buffer_size):
     finally:
         print('\n\nConexion finalizada con el servidor')
         sock.close()
-        client.connect(host=MQTT_HOST, port = MQTT_PORT) #Conectar al servidor remoto
+        #client.connect(host=MQTT_HOST, port = MQTT_PORT) #Conectar al servidor remoto
 
 
 logging.info("Cliente MQTT con paho-mqtt") #Mensaje en consola
@@ -166,7 +166,8 @@ client.loop_start()
 #Loop principal: leer los datos de los sensores y enviarlos al broker en los topics adecuados cada cierto tiempo
 try:
     while True: 
-              
+        print(SERVER_IP)
+        print(SERVER_PORT)
         comando = input("Ingrese el comando: ")
 
         if comando == "1a":
@@ -186,7 +187,7 @@ try:
         elif comando == "2b":
             topic_send = input("Ingrese el nombre de la sala: ")
             client.publish("usuarios/"+str(topic_send),"archivo",1,False)
-            conexionTCP(SERVER_IP,SERVER_PORT,BUFFER_SIZE)
+            conexionTCP(SERVER_IP,IP_PORT,BUFFER_SIZE)
         else:
             logging.error("El comando ingresado es incorrecto, recuerde ver las instrucciones")
                
@@ -199,5 +200,5 @@ except KeyboardInterrupt:
 
 finally:
     client.loop_stop()
-    client.disconnect()
+    #client.disconnect()
     logging.info("Se ha desconectado del broker. Saliendo...")
