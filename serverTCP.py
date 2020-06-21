@@ -14,32 +14,28 @@ serverAddress = (IP_ADDR_ALL, IP_PORT) #Escucha en todas las interfaces
 print('Iniciando servidor en {}, puerto {}'.format(*serverAddress))
 sock.bind(serverAddress) #Levanta servidor con parametros especificados
 
-#Existe una nueva funcion en Python 3.8: socket.create_server()
-#Tiene poca documentación aún, por lo que utilizaremos socket.bind() + socket.listen()
-
 # Habilita la escucha del servidor en las interfaces configuradas
 sock.listen(10) #El argumento indica la cantidad de conexiones en cola
-
-while True:
+bandera = True
+while bandera==True:
     # Esperando conexion
     print('Esperando conexion remota')
     connection, clientAddress = sock.accept()
     try:
         print('Conexion establecida desde', clientAddress)
-
-        # Se envia informacion en bloques de BUFFER_SIZE bytes
-        # y se espera respuesta de vuelta
+        archivo = open('recibido.wav','wb')
         while True:
-            data = connection.recv(BUFFER_SIZE)
-            print('Recibido: {!r}'.format(data))
-            if data: #Si se reciben datos (o sea, no ha finalizado la transmision del cliente)
-                print('Enviando data de vuelta al cliente')
-                connection.sendall(data)
-            else:
-                print('Transmision finalizada desde el cliente ', clientAddress)
-                sock.close()
-                connection.close()
-                break
+            data = connection.recv(BUFFER_SIZE)  
+            while data: #Si se reciben datos (o sea, no ha finalizado la transmision del cliente)
+                print("Recibiendo...")
+                archivo.write(data)
+                data = connection.recv(BUFFER_SIZE)         
+            archivo.close()
+            print('Transmision finalizada desde el cliente ', clientAddress)
+            sock.close()
+            connection.close()
+            bandera = False
+            break
     
     except KeyboardInterrupt:
         sock.close()
