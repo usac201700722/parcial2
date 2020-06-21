@@ -181,6 +181,7 @@ try:
             grabar = hilos(duracion)
             grabar.hiloGrabar.start()
         elif comando == "2b":
+            topic_send = input("Ingrese el nombre de la sala: ")
             client.publish("usuarios/"+str(topic_send),"archivo",1,False)
             conexionTCP(SERVER_IP,SERVER_PORT,BUFFER_SIZE)
         else:
