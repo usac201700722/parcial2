@@ -79,26 +79,27 @@ class hiloTCP(object):
 
         # Habilita la escucha del servidor en las interfaces configuradas
         sock.listen(10) #El argumento indica la cantidad de conexiones en cola
+        
         bandera = True
         while bandera==True:
             # Esperando conexion
-            print('Esperando conexion remota')
+            logging.info('Esperando conexion remota')
             connection, clientAddress = sock.accept()
             try:
                 print('Conexion establecida desde', clientAddress)
-                archivo = open('recibidoServer.wav','wb')
+                archivo = open('recibido.wav','wb')
                 while True:
                     data = connection.recv(BUFFER_SIZE)  
                     while data: #Si se reciben datos (o sea, no ha finalizado la transmision del cliente)
-                        print("Recibiendo...")
+                        logging.debug("Recibiendo...")
                         archivo.write(data)
                         data = connection.recv(BUFFER_SIZE)         
                     archivo.close()
-                    print('Transmision finalizada desde el cliente ', clientAddress)
+                    logging.info('Transmision finalizada')
                     sock.close()
-                connection.close()
-                bandera = False
-                break
+                    connection.close()
+                    bandera = False
+                    break
             
             except KeyboardInterrupt:
                 sock.close()
@@ -162,7 +163,6 @@ try:
             print("**************************************")
             recibe = hiloTCP(IP_ADDR)
             recibe.hiloRecibidor.start()
-            
 
         time.sleep(10)	
 

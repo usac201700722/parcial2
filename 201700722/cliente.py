@@ -95,17 +95,20 @@ class hiloTCP(object):
         server_address = (self.SERVER_IP, SERVER_PORT)
         print('Conectando a {} en el puerto {}'.format(*server_address))
         sock.connect(server_address)
-
-        archivo = open('ultimoAudio.wav','rb')
-        print("Enviando...")
-        l=archivo.read(BUFFER_SIZE)
-        while l:
-            print("Sending...")
-            sock.send(l)
+        try:
+            archivo = open('ultimoAudio.wav','rb')
+            print("Enviando...")
             l=archivo.read(BUFFER_SIZE)
-        archivo.close()
-        print("DOne sending")
-        sock.close()
+            while l:
+                print("Sending...")
+                sock.send(l)
+                l=archivo.read(BUFFER_SIZE)
+            archivo.close()
+            print("DOne sending")
+            client.publish("usuarios/201700722","nada",1,False)
+            sock.close()
+        except ConnectionRefusedError:
+            logging.error("El servidor ha rechazado la conexion, intente hacerlo otra vez")
 
 
 #Configuracion inicial de logging
