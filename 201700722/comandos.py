@@ -80,20 +80,3 @@ class comandosServidor(object):
 #de ultimo el tamaño del archivo, no importando la cantidad de digitos
 # y hay ifs porque uno es si es el cliente osea el carnet o es una sala
 
-
-user=input("Ingrese el destino: ")
-fsize=int(input("Ingrese el tamaño del archivo: "))
-print("*************************")
-objeto= comandosCliente(user)
-objeto.fileTransfer(fsize)
-descomponer = comandosServidor(str(objeto.fileTransfer(fsize)))
-print(type(descomponer.separa()[0]))
-print(descomponer.separa()[1])
-print(descomponer.separa()[2])
-print("*************************")
-objeto.alive()
-descomponer = comandosServidor(str(objeto.alive()))
-print(descomponer.separa()[0])
-print(descomponer.separa()[1])
-print("*************************")
-

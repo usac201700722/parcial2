@@ -147,7 +147,7 @@ client.on_publish = on_publish
 client.username_pw_set(MQTT_USER, MQTT_PASS) #Credenciales requeridas por el broker, user y pass
 client.connect(host=MQTT_HOST, port = MQTT_PORT) #Conectar al servidor remoto
 #host es la ip, y el puerto el puerto xD si lo dejamos vacio lo conecta al 1883 (CREO)
-
+client.publish("usuarios/08/201700722","00$00$00",1,False)
 #*********** Suscripciones del servidor ******************
 qos = 1
 user = configuracionesServidor(USER_FILENAME,qos)
