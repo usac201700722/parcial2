@@ -7,6 +7,7 @@ import os
 import sys       #Requerido para salir (sys.exit())
 import threading #Concurrencia con hilos
 from brokerdata import * #Informacion de la conexion
+from comandos import *
 
 USER_FILENAME ='usuario'
 SALAS_FILENAME = 'salas'
@@ -71,7 +72,7 @@ class hilos(object):
         logging.info('Comenzando la grabación')
         os.system(grabador)
         logging.info('***Grabación finalizada***')
-
+ 
 class hiloTCP(object):
     def __init__(self, SERVER_IP):
         self.SERVER_IP=SERVER_IP
@@ -103,7 +104,7 @@ class hiloTCP(object):
                 l=archivo.read(BUFFER_SIZE)
             archivo.close()
             print("Done sending")
-            client.publish("usuarios/201700722","nada",1,False)
+            client.publish("comandos/08/201700722","nada",1,False)
             sock.close()
         except ConnectionRefusedError:
             logging.error("El servidor ha rechazado la conexion, intente hacerlo otra vez")
@@ -181,12 +182,29 @@ try:
             mensaje = input("Texto a enviar: ")
             client.publish("salas/08/"+str(topic_send),mensaje,1,False)
         elif comando == "2a":
-            topic_send = input("Ingrese el usuario al que desea enviar el audio: ")
-            duracion = int(input("Ingrese la duracion del audio en segundos: "))
-            grabar = hilos(duracion)
-            grabar.hiloGrabar.start()
+            topic_send = input("Ingrese el usuario al que desea enviar el audio (Ej: '201700376', sin comillas): ")
+            duracion = int(input("Ingrese la duracion del audio en segundos: (Max. 30 seg)"))
+            #grabar = hilos(duracion)
+            #grabar.hiloGrabar.start()
+            if duracion<=30:
+                grabador = str("arecord -d "+str(duracion)+" -f U8 -r 8000 ultimoAudio.wav")
+                logging.info('Comenzando la grabación')
+                os.system(grabador)
+                logging.info('***Grabación finalizada***')
+                size= os.stat('ultimoAudio.wav').st_size
+                mensaje = comandosCliente(topic_send)
+                mensaje.fileTransfer(size)
+
+                client.publish("comandos/08/"+str(topic_send),"archivo",1,False)
+                time.sleep(10)
+                conexion= hiloTCP(SERVER_IP)
+                conexion.hiloConexion.start()
+            else:
+                logging.error("¡La duracion debe ser menor a 30 seg!")
+                break
+            
         elif comando == "2b":
-            topic_send = input("Ingrese el nombre de la sala: ")
+            topic_send = input("Ingrese el nombre de la sala (Ej: 'S01', sin comillas y S Mayúscula): ")
             client.publish("usuarios/"+str(topic_send),"archivo",1,False)
             time.sleep(DEFAULT_DELAY)
             conexion= hiloTCP(SERVER_IP)

@@ -166,8 +166,9 @@ try:
     while True:
         #logging.debug("El dato ingresado es: "+str(dato.decode('utf-8')))
         comandoIn=dato.decode('utf-8')
+        comando_accion = comandosServidor(comandoIn)
         
-        if comandoIn=="archivo":
+        if comando_accion.separa()[0]=="04":
             print("**************************************")
             recibe = hiloTCP(IP_ADDR)
             recibe.hiloRecibidor.start()
