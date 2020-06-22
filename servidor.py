@@ -11,7 +11,7 @@ from comandos import *
 LOG_FILENAME = 'mqtt.log'
 SALAS_FILENAME = 'salas'
 USER_FILENAME = 'usuarios'
-dato=b''
+dato=b'00$00'
 
 class configuracionesServidor(object):
 
