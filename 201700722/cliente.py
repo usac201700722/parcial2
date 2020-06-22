@@ -12,6 +12,7 @@ from comandos import *
 USER_FILENAME ='usuario'
 SALAS_FILENAME = 'salas'
 DEFAULT_DELAY = 2
+dato=b'\x01$000'
 
 class configuracionCLiente(object):
     def __init__(self,filename='', qos=2):
@@ -81,6 +82,11 @@ class hiloTCP(object):
                         args = (self,self.SERVER_IP),
                         daemon = True
                         )
+        self.hiloConexionRecibir=threading.Thread(name = 'Recibiendo archivo de audio',
+                        target = hiloTCP.conexionTCPrecibir,
+                        args = (self,self.SERVER_IP),
+                        daemon = True
+                        )
 
     def conexionTCP(self, SERVER_IP):
         self.SERVER_IP   = '167.71.243.238'
@@ -104,10 +110,44 @@ class hiloTCP(object):
                 l=archivo.read(BUFFER_SIZE)
             archivo.close()
             print("Done sending")
-            client.publish("comandos/08/201700722","nada",1,False)
+            first =b'\x01$201700722$4000'
+            client.publish("comandos/08/201700722",first,2,False)
             sock.close()
         except ConnectionRefusedError:
             logging.error("El servidor ha rechazado la conexion, intente hacerlo otra vez")
+  
+    def conexionTCPrecibir(self,SERVER_IP):
+        SERVER_ADDR = '167.71.243.238'
+        SERVER_PORT = 9808
+        BUFFER_SIZE = 64 * 1024
+
+        sock = socket.socket()
+        sock.connect((SERVER_ADDR, SERVER_PORT))
+
+        try:
+            buff = sock.recv(BUFFER_SIZE)
+            archivo = open('recibido.wav', 'wb') #Aca se guarda el archivo entrante
+            while buff:
+                buff = sock.recv(BUFFER_SIZE) #Los bloques se van agregando al archivo
+                archivo.write(buff)
+
+            archivo.close() #Se cierra el archivo
+
+            print("Recepcion de archivo finalizada")
+
+        finally:
+            print('Conexion al servidor finalizada')
+            sock.close() #Se cierra el socket
+
+def comandos_funcion(dato_entrada):
+    comando_accion = comandosServidor(str(dato_entrada))
+    logging.debug("Si entro a la funcion")
+    if (comando_accion.separa()[0]=="02"):
+        recibir_audio= hiloTCP(SERVER_IP)
+        recibir_audio.hiloConexionRecibir.start()
+    else:
+        pass
+
 
 
 #Configuracion inicial de logging
@@ -129,8 +169,16 @@ def on_publish(client, userdata, mid):
 #Callback que se ejecuta cuando llega un mensaje al topic suscrito
 def on_message(client, userdata, msg):	#msg contiene el topic y la info que llego
     #Se muestra en pantalla informacion que ha llegado
-    logging.info("Ha llegado el mensaje al topic: " + str(msg.topic)) #de donde vino el mss
-    logging.info("El contenido del mensaje es: " + str(msg.payload))#que vino en el mss
+    if str(msg.topic)=="comandos/08/201700722":
+        global dato 
+        dato = msg.payload
+        logging.info("Ha llegado el mensaje al topic: " + str(msg.topic)) #de donde vino el mss
+        logging.info("El contenido del mensaje es: " + str(msg.payload))#que vino en el mss
+        comandos_funcion(dato)
+    else:
+        mensaje_chat= msg.payload
+        logging.info("Ha llegado el mensaje al topic: " + str(msg.topic)) #de donde vino el mss
+        logging.info("El contenido del mensaje es: " + str(mensaje_chat.decode('utf-8')))#que vino en el mss
 
 
 logging.info("Cliente MQTT con paho-mqtt") #Mensaje en consola
@@ -172,7 +220,7 @@ client.loop_start()
 try:
     while True: 
         comando = input("Ingrese el comando: ")
-
+        
         if comando == "1a":
             topic_send = input("Ingrese el numero de usuario (Ej: '201700376', sin comillas): ")
             mensaje = input("Texto a enviar: ")
@@ -193,22 +241,35 @@ try:
                 logging.info('***Grabación finalizada***')
                 size= os.stat('ultimoAudio.wav').st_size
                 mensaje = comandosCliente(topic_send)
-                mensaje.fileTransfer(size)
-
-                client.publish("comandos/08/"+str(topic_send),"archivo",1,False)
+                print(mensaje.fileTransfer(size))
+                client.publish("comandos/08/"+str(topic_send),mensaje.fileTransfer(size),1,False)
                 time.sleep(10)
                 conexion= hiloTCP(SERVER_IP)
                 conexion.hiloConexion.start()
             else:
                 logging.error("¡La duracion debe ser menor a 30 seg!")
                 break
-            
+        
         elif comando == "2b":
-            topic_send = input("Ingrese el nombre de la sala (Ej: 'S01', sin comillas y S Mayúscula): ")
-            client.publish("usuarios/"+str(topic_send),"archivo",1,False)
-            time.sleep(DEFAULT_DELAY)
-            conexion= hiloTCP(SERVER_IP)
-            conexion.hiloConexion.start()
+            topic_send = input("Ingrese la sala a la que desea enviar el audio (Ej: 'S01', sin comillas y S Mayúscula): ")
+            duracion = int(input("Ingrese la duracion del audio en segundos: (Max. 30 seg)"))
+            #grabar = hilos(duracion)
+            #grabar.hiloGrabar.start()
+            if duracion<=30:
+                grabador = str("arecord -d "+str(duracion)+" -f U8 -r 8000 ultimoAudio.wav")
+                logging.info('Comenzando la grabación')
+                os.system(grabador)
+                logging.info('***Grabación finalizada***')
+                size= os.stat('ultimoAudio.wav').st_size
+                mensaje = comandosCliente(topic_send)
+                print(mensaje.fileTransfer(size))
+                client.publish("comandos/08/"+str(topic_send),mensaje.fileTransfer(size),1,False)
+                time.sleep(10)
+                conexion= hiloTCP(SERVER_IP)
+                conexion.hiloConexion.start()
+            else:
+                logging.error("¡La duracion debe ser menor a 30 seg!")
+                break
         else:
             logging.error("El comando ingresado es incorrecto, recuerde ver las instrucciones")
                

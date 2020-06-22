@@ -11,7 +11,7 @@ from comandos import *
 LOG_FILENAME = 'mqtt.log'
 SALAS_FILENAME = 'salas'
 USER_FILENAME = 'usuarios'
-dato=b'00$00'
+dato=b''
 
 class configuracionesServidor(object):
 
@@ -71,6 +71,11 @@ class hiloTCP(object):
                         args = (self,self.IP_ADDR),
                         daemon = True
                         )
+        self.hiloEnviador=threading.Thread(name = 'Enviar nota de voz',
+                        target = hiloTCP.conexionTCPenvio,
+                        args = (self,self.IP_ADDR),
+                        daemon = True
+                        )
 
     def conexionTCP(self, IP_ADDR):
         # Crea un socket TCP
@@ -107,6 +112,9 @@ class hiloTCP(object):
                     logging.info('Transmision finalizada')
                     sock.close()
                     connection.close()
+                    time.sleep(10)
+                    enviar_nota_de_voz = hiloTCP(IP_ADDR)
+                    enviar_nota_de_voz.hiloEnviador.start()
                     bandera = False
                     break
             
@@ -116,6 +124,32 @@ class hiloTCP(object):
             finally:
                 # Se baja el servidor para dejar libre el puerto para otras aplicaciones o instancias de la aplicacion
                 connection.close()
+
+    def conexionTCPenvio(self, IP_ADDR):
+        SERVER_ADDR = '167.71.243.238'
+        SERVER_PORT = 9808
+        BUFFER_SIZE = 64 * 1024 
+        nose=b'\x02$201700722'
+        client.publish("comandos/08/201700722",nose,2,False)
+        server_socket = socket.socket()
+        server_socket.bind((SERVER_ADDR, SERVER_PORT))
+        server_socket.listen(100) #1 conexion activa y 9 en cola
+        try:
+            while True:
+                print("\nEsperando conexion remota para enviar el archivo de audio: \n")
+                conn, addr = server_socket.accept()
+                print('Conexion establecida desde ', addr)
+                print('Enviando archivo audio...')
+                with open('recibido.wav', 'rb') as f: #Se abre el archivo a enviar en BINARIO
+                    conn.sendfile(f, 0)
+                    f.close()
+                conn.close()
+                print("\n\nArchivo enviado a: ", addr)
+                server_socket.close()
+        finally:
+            print("Cerrando el servidor...")
+            server_socket.close()
+
 
 #Configuracion inicial de logging
 logging.basicConfig(
@@ -147,7 +181,9 @@ client.on_publish = on_publish
 client.username_pw_set(MQTT_USER, MQTT_PASS) #Credenciales requeridas por el broker, user y pass
 client.connect(host=MQTT_HOST, port = MQTT_PORT) #Conectar al servidor remoto
 #host es la ip, y el puerto el puerto xD si lo dejamos vacio lo conecta al 1883 (CREO)
-client.publish("usuarios/08/201700722","00$00$00",1,False)
+first =b'\x01$201700722$4000'
+client.publish("comandos/08/201700722",first,2,False)
+
 #*********** Suscripciones del servidor ******************
 qos = 1
 user = configuracionesServidor(USER_FILENAME,qos)
@@ -161,14 +197,14 @@ comandos.subComandos()
 #Iniciamos el thread (implementado en paho-mqtt) para estar atentos a mensajes en los topics subscritos
 client.loop_start()	#COn esto hacemos que las sub funcionen
 #El thread de MQTT queda en el fondo, mientras en el main loop hacemos otra cosa
-
+time.sleep(5)
 try:
     while True:
         #logging.debug("El dato ingresado es: "+str(dato.decode('utf-8')))
-        comandoIn=dato.decode('utf-8')
-        comando_accion = comandosServidor(comandoIn)
+        #comandoIn=dato.decode('utf-8')
+        comando_accion = comandosServidor(str(dato))
         
-        if comando_accion.separa()[0]=="04":
+        if (comando_accion.separa()[0]=="03"):
             print("**************************************")
             recibe = hiloTCP(IP_ADDR)
             recibe.hiloRecibidor.start()
