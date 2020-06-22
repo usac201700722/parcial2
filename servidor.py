@@ -4,7 +4,8 @@ import time
 import os 
 import socket
 import threading #Concurrencia con hilos
-from brokerdata import * 
+from brokerdata import *
+from comandos import * 
 
 
 LOG_FILENAME = 'mqtt.log'
@@ -28,7 +29,6 @@ class configuracionesServidor(object):
             datos.append(registro) 
         archivo.close() #Cerrar el archivo al finalizar
         for i in datos:
-            #print("salas/"+str(i[0])+"/S"+str(i[1]))
             #client.subscribe(("salas/"+str(i[0])+"/S"+str(i[1]), qos))
             logging.debug("salas/"+str(i[0])+"/S"+str(i[1]))
     
@@ -41,11 +41,20 @@ class configuracionesServidor(object):
             datos.append(registro) 
         archivo.close() #Cerrar el archivo al finalizar       
         for i in datos:
-            client.subscribe(("usuarios/"+str(i[0]), self.qos))
-            logging.debug("usuarios/"+str(i[0]))
+            client.subscribe(("usuarios/08/"+str(i[0]), self.qos))
+            logging.debug("usuarios/08/"+str(i[0]))
     
-    def subComandos(self, qos=2):
-        client.subscribe("comandos/08/#",self.qos)
+    def subComandos(self):
+        datos = []
+        archivo = open(self.filename,'r') #Abrir el archivo en modo de LECTURA
+        for line in archivo: #Leer cada linea del archivo
+            registro = line.split(',')
+            registro[-1] = registro[-1].replace('\n', '')
+            datos.append(registro) 
+        archivo.close() #Cerrar el archivo al finalizar       
+        for i in datos:
+            client.subscribe(("comandos/08/"+str(i[0]), self.qos))
+            logging.debug("comandos/08/"+str(i[0]))
 
     def __str__(self):
         datosMQTT="Archivo de datos: "+str(self.filename)+" Qos: "+ str(self.qos)
@@ -68,9 +77,9 @@ class hiloTCP(object):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.IP_ADDR ='167.71.243.238' #La IP donde desea levantarse el server
-        IP_ADDR_ALL = '' #En caso que se quiera escuchar en todas las interfaces de red
-        IP_PORT = 9808 #Puerto al que deben conectarse los clientes
-        BUFFER_SIZE = 64*1024
+        #IP_ADDR_ALL = '' #En caso que se quiera escuchar en todas las interfaces de red
+        #IP_PORT = 9808 #Puerto al que deben conectarse los clientes
+        #BUFFER_SIZE = 64*1024
 
         # Bind the socket to the port
         serverAddress = (IP_ADDR_ALL, IP_PORT) #Escucha en todas las interfaces
@@ -107,7 +116,6 @@ class hiloTCP(object):
             finally:
                 # Se baja el servidor para dejar libre el puerto para otras aplicaciones o instancias de la aplicacion
                 connection.close()
-
 
 #Configuracion inicial de logging
 logging.basicConfig(
@@ -146,8 +154,8 @@ user = configuracionesServidor(USER_FILENAME,qos)
 user.subUsuarios()
 salas = configuracionesServidor(SALAS_FILENAME,qos)
 salas.subSalas()
-comandos = configuracionesServidor(qos)
-comandos.subComandos(qos)
+comandos = configuracionesServidor(USER_FILENAME,qos)
+comandos.subComandos()
 #***********************************************************
 
 #Iniciamos el thread (implementado en paho-mqtt) para estar atentos a mensajes en los topics subscritos

@@ -8,11 +8,9 @@ import sys       #Requerido para salir (sys.exit())
 import threading #Concurrencia con hilos
 from brokerdata import * #Informacion de la conexion
 
-'''
-Ejemplo de cliente MQTT: gateway de red de sensores
-'''
 USER_FILENAME ='usuario'
 SALAS_FILENAME = 'salas'
+DEFAULT_DELAY = 2
 
 class configuracionCLiente(object):
     def __init__(self,filename='', qos=2):
@@ -27,8 +25,8 @@ class configuracionCLiente(object):
             datos.append(registro) 
         archivo.close() #Cerrar el archivo al finalizar
         for i in datos:
-            client.subscribe(("comandos/"+str(i[0]), self.qos))
-            logging.debug("comandos/"+str(i[0]))
+            client.subscribe(("comandos/08/"+str(i[0]), self.qos))
+            logging.debug("comandos/08/"+str(i[0]))
     
     def subUsuarios(self):
         datos = []
@@ -38,8 +36,8 @@ class configuracionCLiente(object):
             datos.append(registro) 
         archivo.close() #Cerrar el archivo al finalizar
         for i in datos:
-            client.subscribe(("usuarios/"+str(i[0]), self.qos))
-            logging.debug("usuarios/"+str(i[0]))
+            client.subscribe(("usuarios/08/"+str(i[0]), self.qos))
+            logging.debug("usuarios/08/"+str(i[0]))
 
     def subSalas(self):
         datos = []
@@ -104,7 +102,7 @@ class hiloTCP(object):
                 sock.send(l)
                 l=archivo.read(BUFFER_SIZE)
             archivo.close()
-            print("DOne sending")
+            print("Done sending")
             client.publish("usuarios/201700722","nada",1,False)
             sock.close()
         except ConnectionRefusedError:
@@ -115,11 +113,7 @@ class hiloTCP(object):
 logging.basicConfig(
     level = logging.DEBUG, 
     format = '[%(levelname)s] (%(processName)-10s) %(message)s'
-    )
-
-
-#Tiempo de espera entre lectura y envio de dato 
-DEFAULT_DELAY = 2 
+    ) 
 
 #Handler en caso suceda la conexion con el broker MQTT
 def on_connect(client, userdata, flags, rc): 
@@ -151,7 +145,7 @@ client.username_pw_set(MQTT_USER, MQTT_PASS) #Credenciales requeridas por el bro
 client.connect(host=MQTT_HOST, port = MQTT_PORT) #Conectar al servidor remoto
 
 
-#************* Suscripciones del servidor *********
+#************* Suscripciones del cliente *********
 comandos= configuracionCLiente(USER_FILENAME,2)
 comandos.subComandos()
 usuarios = configuracionCLiente(USER_FILENAME,2)
@@ -159,11 +153,6 @@ usuarios.subUsuarios()
 salas = configuracionCLiente(SALAS_FILENAME,2)
 salas.subSalas()
 #***************************************************
-
-def publishData(topicRoot, topicName, value, qos = 0, retain = False):
-    topic = topicRoot + "/" + topicName
-    client.publish(topic, value, qos, retain)
-	#Publica de forma ordenada los valores del topic
 
 print('''
 Menú:
@@ -184,14 +173,13 @@ try:
         comando = input("Ingrese el comando: ")
 
         if comando == "1a":
-            topic_send = input("Ingrese el numero de usuario: ")
+            topic_send = input("Ingrese el numero de usuario (Ej: '201700376', sin comillas): ")
             mensaje = input("Texto a enviar: ")
-            #mensaje=mensaje.encode()
-            client.publish("usuarios/"+str(topic_send),mensaje,1,False)
+            client.publish("usuarios/08/"+str(topic_send),mensaje,1,False)
         elif comando == "1b":
-            topic_send = input("Ingrese el nombre de la sala: ")
+            topic_send = input("Ingrese el nombre de la sala (Ej: 'S01', sin comillas y S Mayúscula): ")
             mensaje = input("Texto a enviar: ")
-            client.publish("usuarios/"+str(topic_send),mensaje,1,False)
+            client.publish("salas/08/"+str(topic_send),mensaje,1,False)
         elif comando == "2a":
             topic_send = input("Ingrese el usuario al que desea enviar el audio: ")
             duracion = int(input("Ingrese la duracion del audio en segundos: "))

@@ -12,7 +12,6 @@ class comandosServidor(object):
         codi=''
         destinatario =''
         tamaño=''
-        separado=''
         if(len(self) > 16):
             for i in range(len(self)):
                 if i>3 and i<6:
@@ -53,3 +52,7 @@ total = comandosServidor(str(datorecibido))
 separados = comandosServidor(str(datosrecibidos))
 print(total)
 print(separados)
+
+print(separados.separa()[0])
+print(separados.separa()[1])
+print(separados.separa()[2])
