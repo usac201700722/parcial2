@@ -1,11 +1,10 @@
-import paho.mqtt.client as paho
-import logging
-import time
-import socket
-import os
-import sys       #Requerido para salir (sys.exit())
-import threading #Concurrencia con hilos
-from brokerdata import * #Informacion de la conexion
+import paho.mqtt.client as paho #ARMCH libreria para configuracion de paho mqtt
+import logging                  #ARMCH libreria para reemplazar el print
+import time                     #ARMCH libreria para realizar pausas time.sleep
+import os           #ARMCH esta libreria nos sirve para utilizar comandos de bash en python 
+import sys          # ARMCH Requerido para salir (sys.exit())
+import threading    #ARMCH Concurrencia con hilos
+from brokerdata import * #ARMCH archcivo importado para credenciales y constantes 
 
 '''
 Comentario y clase hecho por: SALU
@@ -133,52 +132,59 @@ class configuracionCLiente(object):
     def __repr__(self):
         return self.__str__
 
+'''
+Comentario y clase hecho por: ARMCH 
+la clase comando usuarios sirve para controlar las acciones que realice el usuario el parametro de entrada 
+de la clase indica la accion que se va a realizar de acuerdo al menu principal, de esta manera el codigo queda 
+mas limpio y ordenado
+'''
+
 class comandosUsuario(object):
+    #ARMCH este es el constructor de la clase comandos usuario
     def __init__(self, comando =""):
         self.comando=comando
-
+    #ARMCH metodo que maneja cada una de las acciones que se van a realizar por mqtt
     def accion(self):
-        if self.comando == "1a":
+        if self.comando == "1a":    #ARMCH aqui envia mensajes a usuarios
             topic_send = input("Ingrese el numero de usuario (Ej: '201700376', sin comillas): ")
             mensaje = input("Texto a enviar: ")
             client.publish("usuarios/08/"+str(topic_send),mensaje,1,False)
-        elif self.comando == "1b":
+        elif self.comando == "1b":  #ARMCH aqui envia mensajes a salas
             topic_send = input("Ingrese el nombre de la sala (Ej: 'S01', sin comillas y S Mayúscula): ")
             mensaje = input("Texto a enviar: ")
             client.publish("salas/08/"+str(topic_send),mensaje,1,False)
-        elif self.comando == "2a":
+        elif self.comando == "2a":  #ARMCH aqui envia audio a usuarios
             topic_send = input("Ingrese el usuario al que desea enviar el audio (Ej: '201700376', sin comillas): ")
             duracion = int(input("Ingrese la duracion del audio en segundos: (Max. 30 seg)"))
-            if duracion<=30:
+            if duracion<=30:    #ARMCH si el audio es menor que 30 lo envia
                 grabador = str("arecord -d "+str(duracion)+" -f U8 -r 8000 ultimoAudio.wav")
                 logging.info('Comenzando la grabación')
                 os.system(grabador)
                 logging.info('***Grabación finalizada***')
-                #**********Esto lo puedo meter en un hilo******************
+                #**********Envio de audio por mqtt******************
                 enviarAudio(topic_send)
-            else:
+            else:   #ARMCH de lo contrario da un mensaje de error
                 logging.error("¡La duracion debe ser menor a 30 seg!")
-                #break
        
-        elif self.comando == "2b":
+        elif self.comando == "2b":  #ARMCH aqui envia audios a salas
             topic_send = input("Ingrese la sala a la que desea enviar el audio (Ej: 'S01', sin comillas y S Mayúscula): ")
             duracion = int(input("Ingrese la duracion del audio en segundos: (Max. 30 seg)"))
-            if duracion<=30:
+            if duracion<=30:    #ARMCH si el audio es menor que 30s lo envia
                 grabador = str("arecord -d "+str(duracion)+" -f U8 -r 8000 ultimoAudio.wav")
                 logging.info('Comenzando la grabación')
                 os.system(grabador)
                 logging.info('***Grabación finalizada***')
                 #************** HILO **************************
                 enviarAudio(topic_send)
-            else:
+            else:   #ARMCH si el audio es mayor da un mensaje de error
                 logging.error("¡La duracion debe ser menor a 30 seg!")
-                #break
-        elif self.comando in ["exit","EXIT"]:
+                
+        elif self.comando in ["exit","EXIT"]:   #ARMCH sale del programa
             sys.exit(0)
 
         else:
             logging.error("El comando ingresado es incorrecto, recuerde ver las instrucciones")
-
+        #ARMCH hace una peque;a pausa antes de volver a pedir otro comando
         logging.debug("Los datos han sido enviados al broker")            
         time.sleep(DEFAULT_DELAY)
 
@@ -225,6 +231,8 @@ client = MQTTconfig(clean_session=True)
 rc = client.run()
    
 #************* Suscripciones del cliente *********
+#ARMCH aqui mandamos a llamar a la clase configuraciones clientes para
+#suscribir al usuario de forma recursiva
 audios= configuracionCLiente(USER_FILENAME,2)
 logging.debug(audios.subAudios())
 lista1=audios.subAudios()
@@ -237,10 +245,11 @@ salas = configuracionCLiente(SALAS_FILENAME,2)
 logging.debug(salas.subSalas())
 #***************************************************
 
-client.loop_start()
+client.loop_start()  
 #Loop principal: leer los datos de los sensores y enviarlos al broker en los topics adecuados cada cierto tiempo
 try:
     while True:
+        #ARMCH menu principal
         print('''
         -------------------------------------------------
         |Menú:                                          |
@@ -255,9 +264,9 @@ try:
         |3. Salir del sistema --> PRESIONE "exit/EXIT"  |
         --------------------------------------------------
         ''') 
-        dato_usuario = input("Ingrese el comando: ")
-        com=comandosUsuario(dato_usuario)
-        com.accion()
+        dato_usuario = input("Ingrese el comando: ")    #ARMCH el usuario ingresa un comando
+        com=comandosUsuario(dato_usuario)               #ARMCH instancia del objeto instancia usuario
+        com.accion()                                    #ARMCH ejecuta las acciones mqtt
 
 except KeyboardInterrupt:
     logging.warning("Desconectando del broker MQTT...")
