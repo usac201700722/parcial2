@@ -7,4 +7,3 @@ MQTT_PORT = 1883
 #no es buena practica dejar escritas en el codigo las credenciales
 MQTT_USER = "proyectos"
 MQTT_PASS = "proyectos980"
-
