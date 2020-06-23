@@ -10,10 +10,16 @@ from brokerdata import * #Informacion de la conexion
 USER_FILENAME ='usuario'
 SALAS_FILENAME = 'salas'
 DEFAULT_DELAY = 2
-reproducir = False
 
 '''
+Comentario y clase hecho por: SALU
 Config. inicial del cliente MQTT
+Esta clase se encarga de realizar todas las configuraciones
+para un cliente MQTT, cada uno de los métodos son handlres
+o callbacks que se utilizan para la interaccion con los clientes
+MQTT utilizando la libreria paho.mqtt.client, al darle ctr+click
+a cada funcion nos abre la libreria y podamos leer la configuracion
+de cada una de ellas.
 '''
 class MQTTconfig(paho.Client):
     def on_connect(self, client, userdata, flags, rc):
@@ -169,11 +175,23 @@ class comandosUsuario(object):
 
         logging.debug("Los datos han sido enviados al broker")            
         time.sleep(DEFAULT_DELAY)
-    
+
+'''
+ comentario y metodo hecho por: SALU
+ La funcion reproducirAudio se encarga de reproducir el archivo de audio .wav
+ que se almacena en la carpeta del cliente cuando llega un archivo al topic 
+ audios/08/# (En el codigo NO se utilizo el wildcat #, ver clase configuracionCLiente())
+'''   
+
 def reproducirAudio():       
     logging.info("Reproduciendo nota de voz...")
     os.system('aplay audioEntrante.wav')
 
+'''
+comentario y método hecho por: SALU
+La funcion enviarAudio sirve para enviar el audio por medio de MQTT utilizando la 
+client.publish y enviando el archivo de audio como bytes
+'''
 def enviarAudio(topic_send):
     archivo = open('ultimoAudio.wav','rb')
     logging.debug("Preparando para enviar...")
@@ -183,13 +201,11 @@ def enviarAudio(topic_send):
     archivo.close()
     logging.debug("Envio Completado satisfactoriamente")
 
-
 #Configuracion inicial de logging
 logging.basicConfig(
-    level = logging.DEBUG, 
+    level = logging.INFO, 
     format = '[%(levelname)s] (%(processName)-10s) %(message)s'
     ) 
-
 
 hilorecibidor=threading.Thread(name = 'Reproducir nota de voz',
         target = reproducirAudio,
@@ -197,14 +213,11 @@ hilorecibidor=threading.Thread(name = 'Reproducir nota de voz',
         daemon = False
         )
 
-
-logging.info("Cliente MQTT con paho-mqtt") #Mensaje en consola
-
+logging.info("Bienvenidos a WhatsappBro") #Mensaje en consola
 
 client = MQTTconfig(clean_session=True)
 rc = client.run()
-
-    
+   
 #************* Suscripciones del cliente *********
 audios= configuracionCLiente(USER_FILENAME,2)
 logging.debug(audios.subAudios())
@@ -240,13 +253,10 @@ try:
         com=comandosUsuario(dato_usuario)
         com.accion()
 
-        
-
-
 except KeyboardInterrupt:
     logging.warning("Desconectando del broker MQTT...")
 
 finally:
-    client.loop_stop()
-    client.disconnect()
-    logging.info("Se ha desconectado del broker. Saliendo...")
+    client.loop_stop()          #SALU: Detiene la configuracion del cliente MQTT
+    client.disconnect()         #SALU: Desconecta al cliente MQTT del broker
+    logging.info("Se ha desconectado del broker. Saliendo...")  #SALU: Mensaje de salida del sistema
