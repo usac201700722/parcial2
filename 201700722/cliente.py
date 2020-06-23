@@ -7,10 +7,6 @@ import sys       #Requerido para salir (sys.exit())
 import threading #Concurrencia con hilos
 from brokerdata import * #Informacion de la conexion
 
-USER_FILENAME ='usuario'
-SALAS_FILENAME = 'salas'
-DEFAULT_DELAY = 2
-
 '''
 Comentario y clase hecho por: SALU
 Config. inicial del cliente MQTT
@@ -61,65 +57,75 @@ class MQTTconfig(paho.Client):
             rc = self.loop_start()
         return rc
 
+'''
+Comentario y clase hecho por: HANC
+La clase configuracionCLiente se encarga de realizar las suscripciones
+recursivas del cliente MQTT, de esta manera las suscripciones se basan en los
+archivos de texto plano "usuarios" y "salas".
+'''
 class configuracionCLiente(object):
+    #HANC constructor de la clase configuracionCLiente
     def __init__(self,filename='', qos=2):
         self.filename = filename
         self.qos = qos
-
+    #HANC metodo que suscribe al cliente para recibir audios de usuarios
     def subAudios(self):
         datos = []
-        archivo = open(self.filename,'r') #Abrir el archivo en modo de LECTURA
-        for line in archivo: #Leer cada linea del archivo
+        archivo = open(self.filename,'r') #HANC Abrir el archivo en modo de LECTURA
+        for line in archivo: #HANC Leer cada linea del archivo
             registro = line.split('\n')
             datos.append(registro) 
-        archivo.close() #Cerrar el archivo al finalizar
+        archivo.close() #HANC Cerrar el archivo al finalizar
         audios=[]
         for i in datos:
             client.subscribe(("audios/08/"+str(i[0]), self.qos))
             audios.append("audios/08/"+str(i[0]))
         return audios
 
+    #HANC metodo que suscribe al cliente para recibir audios de salas
     def subAudiosSalas(self):
         datos = []
-        archivo = open(self.filename,'r') #Abrir el archivo en modo de LECTURA
-        for line in archivo: #Leer cada linea del archivo
+        archivo = open(self.filename,'r') #HANC Abrir el archivo en modo de LECTURA
+        for line in archivo: #HANC Leer cada linea del archivo
             registro = line.split('S')
             registro[-1] = registro[-1].replace('\n', '')
             datos.append(registro) 
-        archivo.close() #Cerrar el archivo al finalizar
+        archivo.close() #HANC Cerrar el archivo al finalizar
         audios=[]
         for i in datos:
             client.subscribe(("audios/"+str(i[0])+"/S"+str(i[1]), self.qos))
             audios.append("audios/"+str(i[0])+"/S"+str(i[1]))
         return audios
     
+    #HANC metodo que suscribe al cliente a su mismo usuario
     def subUsuarios(self):
         datos = []
-        archivo = open(self.filename,'r') #Abrir el archivo en modo de LECTURA
-        for line in archivo: #Leer cada linea del archivo
+        archivo = open(self.filename,'r') #HANC Abrir el archivo en modo de LECTURA
+        for line in archivo: #HANC Leer cada linea del archivo
             registro = line.split('\n')
             datos.append(registro) 
-        archivo.close() #Cerrar el archivo al finalizar
+        archivo.close() #HANC Cerrar el archivo al finalizar
         users=[]
         for i in datos:
             client.subscribe(("usuarios/08/"+str(i[0]), self.qos))
             users.append("usuarios/08/"+str(i[0]))
         return users
 
+    #HANC metodo que suscribe al cliente a su misma salas
     def subSalas(self):
         datos = []
-        archivo = open(self.filename,'r') #Abrir el archivo en modo de LECTURA
-        for line in archivo: #Leer cada linea del archivo
+        archivo = open(self.filename,'r') #HANC Abrir el archivo en modo de LECTURA
+        for line in archivo: #HANC Leer cada linea del archivo
             registro = line.split('S')
             registro[-1] = registro[-1].replace('\n', '')
             datos.append(registro) 
-        archivo.close() #Cerrar el archivo al finalizar
+        archivo.close() #HANC Cerrar el archivo al finalizar
         sal=[]
         for i in datos:
             client.subscribe(("salas/"+str(i[0])+"/S"+str(i[1]), self.qos))
             sal.append("salas/"+str(i[0])+"/S"+str(i[1]))
         return sal
-
+    
     def __str__(self):
         datosMQTT="Archivo de datos: "+str(self.filename)+" qos: "+ str(self.qos)
         return datosMQTT
