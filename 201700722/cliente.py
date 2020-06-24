@@ -18,26 +18,26 @@ de cada una de ellas.
 '''
 class MQTTconfig(paho.Client):
     def on_connect(self, client, userdata, flags, rc):
-        #Handler en caso suceda la conexion con el broker MQTT
+        #SALU Handler en caso suceda la conexion con el broker MQTT
         connectionText = "CONNACK recibido del broker con codigo: " + str(rc)
         logging.debug(connectionText)
     def on_publish(self, client, userdata, mid): 
-        #Handler en caso se publique satisfactoriamente en el broker MQTT
+        #SALU Handler en caso se publique satisfactoriamente en el broker MQTT
         publishText = "Publicacion satisfactoria"
         logging.debug(publishText)
     def on_message(self, client, userdata, msg):	
-        #Callback que se ejecuta cuando llega un mensaje al topic suscrito
-        #msg contiene el topic y la info que llego
-        #Se muestra en pantalla informacion que ha llegado
+        #SALU Callback que se ejecuta cuando llega un mensaje al topic suscrito
+        #SALU msg contiene el topic y la info que llego
+        #SALU Se muestra en pantalla informacion que ha llegado
         print(lista1)
         topic= msg.topic
-        if topic in lista1:
+        if topic in lista1: #SALU si el topic tiene algun valor de lista1 guarda el audio
             archivo = open('audioEntrante.wav','wb')       
             archivo.write(msg.payload) 
             archivo.close()
             logging.debug('Se guardo la nota de voz satisfactoriamente')
             hilorecibidor.start()
-        else:
+        else:               #Si el topic no es de audio muestra el mensaje de forma amigable
             mensaje_chat=msg.payload
             logging.info("**************************************************************************")
             logging.info("Ha llegado el mensaje al topic: " + str(msg.topic)) #de donde vino el mss
@@ -45,10 +45,11 @@ class MQTTconfig(paho.Client):
             logging.info("**************************************************************************")
             
     def on_subscribe(self, client, obj,mid, qos):
-        #Handler en caso se suscriba satisfactoriamente en el broker MQTT
+        #SALU Handler en caso se suscriba satisfactoriamente en el broker MQTT
         logging.debug("Suscripcion satisfactoria")
 
     def run(self):
+        #SALU este metodo inicializa la conexion MQTT con las credenciales del broker
         self.username_pw_set(MQTT_USER, MQTT_PASS)
         self.connect(host=MQTT_HOST, port = MQTT_PORT)        
         rc = 0
@@ -213,22 +214,25 @@ def enviarAudio(topic_send):
     archivo.close()
     logging.debug("Envio Completado satisfactoriamente")
 
-#Configuracion inicial de logging
+#SALU Configuracion inicial de logging
 logging.basicConfig(
-    level = logging.INFO, 
+    level = logging.INFO, #SALU solo muestra los mensajes de nivel INFO para arriba
     format = '[%(levelname)s] (%(processName)-10s) %(message)s'
     ) 
 
+#SALU este hilo se encarga de reproducir el audio entrante en un hilo
+#paralelo al programa principal
 hilorecibidor=threading.Thread(name = 'Reproducir nota de voz',
         target = reproducirAudio,
         args = (),
         daemon = False
         )
 
-logging.info("Bienvenidos a WhatsappBro") #Mensaje en consola
+logging.info("Bienvenidos a WhatsappBro") #SALI Mensaje en consola
 
+#SALU Iniciamos la configuracion del cliente MQTT
 client = MQTTconfig(clean_session=True)
-rc = client.run()
+rc = client.run()   #SALU Corre la congiduracion 
    
 #************* Suscripciones del cliente *********
 #ARMCH aqui mandamos a llamar a la clase configuraciones clientes para
@@ -246,7 +250,8 @@ logging.debug(salas.subSalas())
 #***************************************************
 
 client.loop_start()  
-#Loop principal: leer los datos de los sensores y enviarlos al broker en los topics adecuados cada cierto tiempo
+#Loop principal: 
+#SALU leer los comandos que ingrese el usuario
 try:
     while True:
         #ARMCH menu principal
@@ -269,6 +274,8 @@ try:
         com.accion()                                    #ARMCH ejecuta las acciones mqtt
 
 except KeyboardInterrupt:
+    #SALU cuando se ejecuta esta interrupcion el programa lanza un mensaje de 
+    #alerta e inmediatamente cierra el programa desconectando al cliente del broker
     logging.warning("Desconectando del broker MQTT...")
 
 finally:
