@@ -36,7 +36,10 @@ class MQTTconfig(paho.Client):
             archivo.write(msg.payload) 
             archivo.close()
             logging.debug('Se guardo la nota de voz satisfactoriamente')
-            hilorecibidor.start()
+            
+            #SALU Activo el hilo que reproduce el audio
+            hilo = hiloAudio(topic)
+            hilo.hiloRecibidor.start()
         else:               #Si el topic no es de audio muestra el mensaje de forma amigable
             mensaje_chat=msg.payload
             logging.info("**************************************************************************")
@@ -195,10 +198,20 @@ class comandosUsuario(object):
  que se almacena en la carpeta del cliente cuando llega un archivo al topic 
  audios/08/# (En el codigo NO se utilizo el wildcat #, ver clase configuracionCLiente())
 '''   
-
-def reproducirAudio():       
-    logging.info("Reproduciendo nota de voz...")
-    os.system('aplay audioEntrante.wav')
+#SALU La clase hiloAudio se encarga de reproducir el audio entrante en un hilo
+#paralelo al programa principal.
+class hiloAudio(object):
+    def __init__(self,mensaje):
+        self.mensaje=mensaje
+        self.hiloRecibidor=threading.Thread(name = 'Guardar nota de voz',
+                        target = hiloAudio.reproducirAudio,
+                        args = (self,self.mensaje),
+                        daemon = False
+                        )
+    def reproducirAudio(self, mensaje):
+        logging.debug(mensaje)       
+        logging.info("Reproduciendo nota de voz...")
+        os.system('aplay audioEntrante.wav')
 
 '''
 comentario y método hecho por: SALU
@@ -219,14 +232,6 @@ logging.basicConfig(
     level = logging.INFO, #SALU solo muestra los mensajes de nivel INFO para arriba
     format = '[%(levelname)s] (%(processName)-10s) %(message)s'
     ) 
-
-#SALU este hilo se encarga de reproducir el audio entrante en un hilo
-#paralelo al programa principal
-hilorecibidor=threading.Thread(name = 'Reproducir nota de voz',
-        target = reproducirAudio,
-        args = (),
-        daemon = False
-        )
 
 logging.info("Bienvenidos a WhatsappBro") #SALI Mensaje en consola
 
